@@ -1,0 +1,39 @@
+# 服务器配置
+server:
+  port: 8080  # 后端端口（默认8080，避免与前端冲突）
+  servlet:
+    context-path: /  # 上下文路径
+
+# Spring配置
+spring:
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/xmut_warehouse?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # Redis配置（加分项，若未安装Redis，可注释）
+  #  redis:
+  #    host: localhost
+  #    port: 6379
+  #    password: ''  # Redis默认无密码
+  #    database: 0
+  # 日志配置
+  logging:
+    level:
+      com.xmut.warehouse.module.*.mapper: debug  # 打印Mapper层SQL日志（便于调试）
+    file:
+      name: logs/warehouse.log  # 日志存储路径（项目根目录/logs）
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/xml/*.xml  # XML映射文件路径
+  type-aliases-package: com.xmut.warehouse.module.*.entity  # 实体类别名包
+  configuration:
+    map-underscore-to-camel-case: true  # 下划线转驼峰（如create_time → createTime）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 控制台打印SQL
+
+# JWT自定义配置（可自定义）
+jwt:
+  secret: xmut_warehouse_2025  # JWT密钥（自定义，建议复杂一点）
+  expire: 7200  # Token过期时间（秒），2小时
