@@ -40,8 +40,6 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
         if (StringUtils.hasText(goodsName)) {
             queryWrapper.like(XmutGoods::getGoodsName, goodsName);
         }
-        // 按更新时间倒序排序
-        queryWrapper.orderByDesc(XmutGoods::getUpdateTime);
         // 分页查询
         IPage<XmutGoods> goodsIPage = this.baseMapper.selectPage(page, queryWrapper);
         return R.success(goodsIPage);
@@ -92,7 +90,6 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
             goods.setPrice(new BigDecimal("0.00")); // 默认单价0.00
         }
         goods.setCreateTime(new Date());
-        goods.setUpdateTime(new Date());
         // 新增商品
         boolean saveSuccess = this.save(goods);
         return saveSuccess ? R.success("商品新增成功") : R.fail("商品新增失败");
@@ -129,7 +126,6 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
             return R.fail("该仓库该类别下已存在同名商品，请勿重复修改");
         }
         // 设置更新时间
-        goods.setUpdateTime(new Date());
         // 修改商品
         boolean updateSuccess = this.updateById(goods);
         return updateSuccess ? R.success("商品修改成功") : R.fail("商品修改失败");
