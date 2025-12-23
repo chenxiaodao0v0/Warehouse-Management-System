@@ -24,6 +24,11 @@ spring:
       com.xmut.warehouse.module.*.mapper: debug  # 打印Mapper层SQL日志（便于调试）
     file:
       name: logs/warehouse.log  # 日志存储路径（项目根目录/logs）
+  #文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB  # 单个文件最大10MB
+      max-request-size: 100MB  # 总请求最大100MB
 
 # MyBatis-Plus配置
 mybatis-plus:
