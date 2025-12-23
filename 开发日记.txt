@@ -1,1 +1,15 @@
 现在这个商品图片文件上传功能有点问题，是按商品类别上传图片的
+目前put、delete方法还没有覆盖鉴权，不过为了开发简便，之后再添加吧
+
+12月23日：
+ ✅已落地核心模块 & 关键配置（全程贴合你项目）
+
+    项目基础：Spring Boot 后端 + Vue 前端，分层架构（Entity+Mapper+Service+ServiceImpl+Controller），统一R返回类，JWT 认证（固定密钥，过滤器生效，localStorage 持久化免登）
+    已完成模块：企业模块（基础）→ 仓库模块 → 商品模块，接口均支持 Token 认证，Apifox 测试流程适配
+    核心适配（针对你实际数据库表）：
+        仓库模块：实体用@TableField绑定name→warehouseName、manager→contact，删除无updateTime字段，适配全局唯一仓库名索引
+        商品模块：实体用@TableField绑定name→goodsName、pic→goodsImg，删除updateTime，spec/unit标记非数据库字段；Mapper 自定义查询用字段别名强制映射解决 null 问题，适配外键级联删除（删仓库 / 类别同步删商品）
+    特殊功能：商品本地图片上传（路径/upload/goods/，前端可直接访问）
+
+✅ 待推进方向（明天可衔接）
+仓库 + 商品模块测试完成后，下一步优先走出入库管理模块（核心业务，依赖仓库和商品数据），后续可延伸调货、库存统计等功能，代码风格和分层架构与现有模块完全一致，可直接复用模板。
