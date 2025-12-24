@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -53,7 +54,7 @@ public class XmutGoodsController {
      * 请求体：JSON格式（与XmutGoods实体字段一致）
      */
     @PostMapping("/add")
-    public R<?> addGoods(@RequestBody XmutGoods goods) {
+    public R<?> addGoods(@Valid @RequestBody XmutGoods goods) {
         return xmutGoodsService.addGoods(goods);
     }
 
@@ -64,7 +65,7 @@ public class XmutGoodsController {
      * 请求体：JSON格式（含商品ID，其他字段按需修改）
      */
     @PutMapping("/update")
-    public R<?> updateGoods(@RequestBody XmutGoods goods) {
+    public R<?> updateGoods(@Valid @RequestBody XmutGoods goods) {
         return xmutGoodsService.updateGoods(goods);
     }
 

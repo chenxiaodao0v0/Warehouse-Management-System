@@ -8,6 +8,7 @@ import com.xmut.warehouse.module.inOutRecord.service.InOutRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -44,7 +45,7 @@ public class InOutRecordController {
      * 测试地址：http://localhost:8080/api/inout/in
      */
     @PostMapping("/in")
-    public R<?> goodsInStock(@RequestBody InOutRecord inOutRecord) {
+    public R<?> goodsInStock(@Valid @RequestBody InOutRecord inOutRecord) {
         return inOutRecordService.goodsInStock(inOutRecord);
     }
 
@@ -54,7 +55,7 @@ public class InOutRecordController {
      * 测试地址：http://localhost:8080/api/inout/out
      */
     @PostMapping("/out")
-    public R<?> goodsOutStock(@RequestBody InOutRecord inOutRecord) {
+    public R<?> goodsOutStock(@Valid @RequestBody InOutRecord inOutRecord) {
         return inOutRecordService.goodsOutStock(inOutRecord);
     }
 
@@ -64,7 +65,7 @@ public class InOutRecordController {
      * 测试地址：http://localhost:8080/api/inout/transfer
      */
     @PostMapping("/transfer")
-    public R<?> goodsTransfer(@RequestBody InOutRecord inOutRecord) {
+    public R<?> goodsTransfer(@Valid @RequestBody InOutRecord inOutRecord) {
         return inOutRecordService.goodsTransfer(inOutRecord);
     }
 

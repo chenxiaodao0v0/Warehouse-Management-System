@@ -90,6 +90,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- 字段校验核心依赖（若缺失则添加） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
 
     </dependencies>
     <dependencyManagement>
