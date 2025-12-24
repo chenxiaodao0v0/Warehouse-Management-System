@@ -145,7 +145,7 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
     @Override
     @Transactional(rollbackFor = Exception.class)
     public R<?> goodsTransfer(InOutRecord inOutRecord) {
-        // 1. 参数校验（调货特有：目标仓库ID必填）
+        // 1. 基础参数校验（新增：原仓库≠目标仓库）
         if (!StringUtils.hasText(inOutRecord.getGoodsId())) {
             return R.fail("商品ID不能为空");
         }
@@ -154,6 +154,10 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         }
         if (!StringUtils.hasText(inOutRecord.getRelatedWarehouseId())) {
             return R.fail("调货目标仓库ID不能为空");
+        }
+        // 新增：原仓库和目标仓库不能相同，避免无效调货
+        if (inOutRecord.getWarehouseId().equals(inOutRecord.getRelatedWarehouseId())) {
+            return R.fail("原仓库和目标仓库不能为同一个仓库，无法调货");
         }
         if (inOutRecord.getQuantity() == null || inOutRecord.getQuantity() <= 0) {
             return R.fail("调货数量必须为正整数");
@@ -172,17 +176,60 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         inOutRecord.setType(3);
         inOutRecord.setOperateTime(new Date());
 
-        // 3. 校验商品是否存在（基础校验，后续可优化：跨仓库库存调整）
-        XmutGoods goods = goodsMapper.selectById(inOutRecord.getGoodsId());
-        if (goods == null) {
-            return R.fail("该商品不存在，无法调货");
+        // 3. 原仓库商品校验：查询商品是否存在 + 库存是否充足
+        // 构造条件：商品ID + 原仓库ID（确保是原仓库的该商品）
+        LambdaQueryWrapper<XmutGoods> sourceGoodsWrapper = new LambdaQueryWrapper<>();
+        sourceGoodsWrapper.eq(XmutGoods::getId, inOutRecord.getGoodsId())
+                .eq(XmutGoods::getWarehouseId, inOutRecord.getWarehouseId());
+        XmutGoods sourceGoods = goodsMapper.selectOne(sourceGoodsWrapper);
+
+        if (sourceGoods == null) {
+            return R.fail("原仓库不存在该商品，无法调货");
         }
-        // 基础版：仅新增调货记录，后续可根据业务需求优化「原仓库减库存、目标仓库加库存」及商品仓库关联调整
-        boolean saveSuccess = this.save(inOutRecord);
-        if (!saveSuccess) {
-            return R.fail("调货记录新增失败");
+        if (sourceGoods.getStock() < inOutRecord.getQuantity()) {
+            return R.fail("原仓库商品库存不足，当前库存：" + sourceGoods.getStock() + "，需调货：" + inOutRecord.getQuantity());
         }
 
-        return R.success("商品调货记录新增成功（基础版，可后续优化库存跨仓库调整逻辑）");
+        // 4. 目标仓库商品处理：存在则加库存，不存在则新增
+        // 构造条件：商品ID（复用原商品基础信息） + 目标仓库ID
+        LambdaQueryWrapper<XmutGoods> targetGoodsWrapper = new LambdaQueryWrapper<>();
+        targetGoodsWrapper.eq(XmutGoods::getId, inOutRecord.getGoodsId())
+                .eq(XmutGoods::getWarehouseId, inOutRecord.getRelatedWarehouseId());
+        XmutGoods targetGoods = goodsMapper.selectOne(targetGoodsWrapper);
+
+        if (targetGoods != null) {
+            // 情况1：目标仓库已存在该商品 → 库存增加
+            targetGoods.setStock(targetGoods.getStock() + inOutRecord.getQuantity());
+            goodsMapper.updateById(targetGoods);
+        } else {
+            // 情况2：目标仓库不存在该商品 → 新增商品关联目标仓库，库存为调货数量
+            targetGoods = new XmutGoods();
+            // 复用原商品的核心信息（名称、价格、图片等，从原商品复制）
+            targetGoods.setId(inOutRecord.getGoodsId()); // 复用商品ID（若需唯一ID，可改为IdType.ASSIGN_UUID，这里按你的表结构适配）
+            targetGoods.setWarehouseId(inOutRecord.getRelatedWarehouseId()); // 关联目标仓库
+            targetGoods.setGoodsName(sourceGoods.getGoodsName()); // 商品名称（从原商品复制）
+            targetGoods.setPrice(sourceGoods.getPrice()); // 商品单价（从原商品复制）
+            targetGoods.setGoodsImg(sourceGoods.getGoodsImg()); // 商品图片（从原商品复制）
+            targetGoods.setStock(inOutRecord.getQuantity()); // 初始库存=调货数量
+            targetGoods.setCategoryId(sourceGoods.getCategoryId()); // 商品类别（从原商品复制）
+            targetGoods.setStatus(sourceGoods.getStatus()); // 上下架状态（从原商品复制）
+            targetGoods.setRemark(sourceGoods.getRemark()); // 商品备注（从原商品复制）
+            targetGoods.setCreateTime(new Date()); // 创建时间
+            goodsMapper.insert(targetGoods);
+        }
+
+        // 5. 原仓库商品库存减少（调货出库）
+        sourceGoods.setStock(sourceGoods.getStock() - inOutRecord.getQuantity());
+        goodsMapper.updateById(sourceGoods);
+
+        // 6. 新增调货记录
+        boolean saveSuccess = this.save(inOutRecord);
+        if (!saveSuccess) {
+            // 记录新增失败，事务自动回滚（库存调整全部撤销）
+            return R.fail("调货记录新增失败，调货操作回滚");
+        }
+
+        return R.success("商品调货成功（原仓库减库存、目标仓库加库存）");
     }
+
 }
