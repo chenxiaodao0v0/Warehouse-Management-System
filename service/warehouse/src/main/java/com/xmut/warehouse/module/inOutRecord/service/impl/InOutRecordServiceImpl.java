@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOutRecord> implements InOutRecordService {
@@ -215,5 +216,39 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         }
 
         return R.success("商品调货成功（原仓库减库存、目标仓库加库存）");
+    }
+
+    @Override
+    public R<List<InOutRecord>> getRecordByTimeAndWarehouse(Date startTime, Date endTime, String warehouseId) {
+        LambdaQueryWrapper<InOutRecord> wrapper = new LambdaQueryWrapper<>();
+        // 时间范围筛选（startTime不为null才加条件）
+        if (startTime != null) {
+            wrapper.ge(InOutRecord::getOperateTime, startTime);
+        }
+        if (endTime != null) {
+            wrapper.le(InOutRecord::getOperateTime, endTime);
+        }
+        // 仓库筛选（支持模糊匹配调货记录：原仓库/目标仓库都算）
+        if (StringUtils.hasText(warehouseId)) {
+            wrapper.and(w -> w.eq(InOutRecord::getWarehouseId, warehouseId)
+                    .or().eq(InOutRecord::getRelatedWarehouseId, warehouseId));
+        }
+        // 按操作时间倒序（最新记录在前，符合使用习惯）
+        wrapper.orderByDesc(InOutRecord::getOperateTime);
+        List<InOutRecord> recordList = this.list(wrapper);
+        return R.success(recordList);
+    }
+
+    @Override
+    public R<List<InOutRecord>> getRecordByGoodsId(String goodsId) {
+        // 参数校验
+        if (!StringUtils.hasText(goodsId)) {
+            return R.fail("商品ID不能为空");
+        }
+        LambdaQueryWrapper<InOutRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(InOutRecord::getGoodsId, goodsId)
+                .orderByDesc(InOutRecord::getOperateTime); // 倒序排列
+        List<InOutRecord> recordList = this.list(wrapper);
+        return R.success(recordList);
     }
 }

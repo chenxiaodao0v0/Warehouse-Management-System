@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.inOutRecord.entity.InOutRecord;
 
+import java.util.Date;
+import java.util.List;
+
 /**
  * 出入库及调货记录Service接口（适配你的表结构）
  */
@@ -21,4 +24,17 @@ public interface InOutRecordService extends IService<InOutRecord> {
 
     // 商品调货（暂支持基础记录新增，后续可优化库存跨仓库调整逻辑）
     R<?> goodsTransfer(InOutRecord inOutRecord);
+
+    /**
+     * 按时间范围+仓库ID查询出入库/调货记录
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param warehouseId 仓库ID
+     */
+    R<List<InOutRecord>> getRecordByTimeAndWarehouse(Date startTime, Date endTime, String warehouseId);
+
+    /**
+     * 按商品ID查询所有出入库/调货记录（查该商品全生命周期流水）
+     */
+    R<List<InOutRecord>> getRecordByGoodsId(String goodsId);
 }

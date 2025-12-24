@@ -1,0 +1,10 @@
+-- 备份4张核心表（商品+仓库+仓商关联+出入库记录）
+CREATE TABLE xmut_goods_bak_20251224 LIKE xmut_goods;
+CREATE TABLE xmut_warehouse_bak_20251224 LIKE xmut_warehouse;
+CREATE TABLE xmut_warehouse_goods_bak_20251224 LIKE xmut_warehouse_goods;
+CREATE TABLE xmut_in_out_record_bak_20251224 LIKE xmut_in_out_record;
+-- 写入备份数据
+INSERT INTO xmut_goods_bak_20251224 SELECT * FROM xmut_goods;
+INSERT INTO xmut_warehouse_bak_20251224 SELECT * FROM xmut_warehouse;
+INSERT INTO xmut_warehouse_goods_bak_20251224 SELECT * FROM xmut_warehouse_goods;
+INSERT INTO xmut_in_out_record_bak_20251224 SELECT * FROM xmut_in_out_record;
