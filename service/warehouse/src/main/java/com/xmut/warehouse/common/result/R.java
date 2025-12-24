@@ -50,4 +50,6 @@ public class R<T> implements Serializable {
         r.setMsg(msg);
         return r;
     }
+
+
 }

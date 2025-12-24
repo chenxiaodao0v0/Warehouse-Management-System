@@ -12,22 +12,24 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    private JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter; // 注入JWT过滤器
+    private JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .csrf().disable() // 关闭CSRF
+                .csrf().disable() // 关闭CSRF（前后端分离必关）
                 .authorizeRequests()
-                // 放行登录接口
+                // 确保登录接口路径和实际一致，精准放行
                 .antMatchers("/api/user/login").permitAll()
-                // 其他接口需要认证
+                // 若有注册、验证码等接口，也可在此添加放行
+                // .antMatchers("/api/user/register").permitAll()
+                // 所有非白名单接口需要认证
                 .anyRequest().authenticated()
                 .and()
-                // 关闭默认表单登录
+                // 关闭默认表单登录和HTTP基础认证（前后端分离无需）
                 .formLogin().disable()
                 .httpBasic().disable()
-                // 添加JWT过滤器：在UsernamePasswordAuthenticationFilter之前执行
+                // JWT过滤器放在UsernamePasswordAuthenticationFilter之前（原有逻辑不变）
                 .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
     }
 }

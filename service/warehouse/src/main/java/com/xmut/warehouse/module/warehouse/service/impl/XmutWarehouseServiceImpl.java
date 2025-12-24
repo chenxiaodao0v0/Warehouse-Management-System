@@ -128,7 +128,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         }
         // 关联校验：校验该仓库是否绑定货品（若绑定则禁止删除，后续货品模块创建后生效）
         long goodsCount = xmutGoodsMapper.selectCount(new LambdaQueryWrapper<com.xmut.warehouse.module.goods.entity.XmutGoods>()
-                .eq(com.xmut.warehouse.module.goods.entity.XmutGoods::getWarehouseId, id));
+                .eq(com.xmut.warehouse.module.goods.entity.XmutGoods::getName, id));
         if (goodsCount > 0) {
             return R.fail("该仓库已关联" + goodsCount + "个货品，无法删除，请先删除关联货品");
         }
@@ -147,7 +147,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         // 批量校验仓库是否绑定货品
         for (String id : ids) {
             long goodsCount = xmutGoodsMapper.selectCount(new LambdaQueryWrapper<com.xmut.warehouse.module.goods.entity.XmutGoods>()
-                    .eq(com.xmut.warehouse.module.goods.entity.XmutGoods::getWarehouseId, id));
+                    .eq(com.xmut.warehouse.module.goods.entity.XmutGoods::getId, id));
             if (goodsCount > 0) {
                 XmutWarehouse warehouse = this.baseMapper.selectById(id);
                 return R.fail("仓库【" + warehouse.getWarehouseName() + "】已关联" + goodsCount + "个货品，无法批量删除");

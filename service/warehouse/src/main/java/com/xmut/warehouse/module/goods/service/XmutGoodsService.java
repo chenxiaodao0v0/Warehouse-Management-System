@@ -39,4 +39,7 @@ public interface XmutGoodsService extends IService<XmutGoods> {
 
     // 商品图片上传（返回图片URL）
     R<String> uploadGoodsImg(MultipartFile file);
+
+    // ========== 保留：查询所有商品基础信息 ==========
+    R<List<XmutGoods>> getAllGoods();
 }

@@ -45,4 +45,11 @@ public interface XmutGoodsMapper extends BaseMapper<XmutGoods> {
             "create_time AS createTime " +
             "FROM xmut_goods WHERE category_id = #{categoryId}")
     List<XmutGoods> selectByCategoryId(String categoryId);
+
+    /**
+     * 根据商品id查询商品列表
+     * 显式指定字段+别名
+     */
+    @Select("select * from xmut_goods where id = #{id}")
+    XmutGoods selectById(String id);
 }

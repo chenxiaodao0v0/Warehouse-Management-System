@@ -1,0 +1,46 @@
+CREATE TABLE `xmut_warehouse_goods` (
+  `id` varchar(36) NOT NULL COMMENT 'UUID主键',
+  `warehouse_id` varchar(36) NOT NULL COMMENT '关联仓库ID',
+  `goods_id` varchar(36) NOT NULL COMMENT '关联商品ID',
+  `stock` int(11) NOT NULL DEFAULT 0 COMMENT '该仓库下该商品的库存（正数）',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '关联创建时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  -- 唯一索引：确保一个商品在一个仓库中仅存一条记录，杜绝重复
+  UNIQUE KEY `uk_warehouse_goods` (`warehouse_id`,`goods_id`),
+  -- 普通索引：提升查询效率
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  KEY `idx_goods_id` (`goods_id`),
+  -- 外键关联（与现有表一致，级联删除）
+  CONSTRAINT `xmut_warehouse_goods_ibfk_1` FOREIGN KEY (`warehouse_id`) REFERENCES `xmut_warehouse` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `xmut_warehouse_goods_ibfk_2` FOREIGN KEY (`goods_id`) REFERENCES `xmut_goods` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库-商品关联明细表（核心：存储商品在各仓库的库存）';
+-- 备份xmut_goods表（测试环境可选，生产环境必做）
+CREATE TABLE `xmut_goods_bak` LIKE `xmut_goods`;
+INSERT INTO `xmut_goods_bak` SELECT * FROM `xmut_goods`;
+
+-- 删除xmut_goods表中的冗余字段（warehouse_id 和 stock）
+ALTER TABLE `xmut_goods`
+DROP COLUMN `warehouse_id`,
+DROP COLUMN `stock`;
+
+
+-- 数据迁移：从xmut_goods_bak迁移到xmut_warehouse_goods
+INSERT INTO `xmut_warehouse_goods` (
+  `id`,
+  `warehouse_id`,
+  `goods_id`,
+  `stock`,
+  `create_time`,
+  `update_time`
+)
+SELECT
+  REPLACE(UUID(), '-', '') AS `id`, -- 生成新UUID
+  `warehouse_id`,
+  `id` AS `goods_id`,
+  `stock`,
+  `create_time`,
+  `create_time` AS `update_time`
+FROM `xmut_goods_bak`
+WHERE `warehouse_id` IS NOT NULL AND `stock` > 0;
+
