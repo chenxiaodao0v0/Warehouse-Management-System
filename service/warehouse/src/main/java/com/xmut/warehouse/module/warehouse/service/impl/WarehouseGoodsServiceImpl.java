@@ -136,4 +136,32 @@ public class WarehouseGoodsServiceImpl extends ServiceImpl<WarehouseGoodsMapper,
         // 4. 返回结果
         return R.success(resultList);
     }
+
+    @Override
+    public R<List<Map<String, Object>>> getLowStockGoods(Integer threshold, String warehouseId) {
+        // 阈值默认10（用户不传则按10判断）
+        if (threshold == null || threshold < 0) {
+            threshold = 10;
+        }
+        LambdaQueryWrapper<WarehouseGoods> wrapper = new LambdaQueryWrapper<>();
+        // 核心：库存低于阈值
+        wrapper.lt(WarehouseGoods::getStock, threshold);
+        // 可选：指定仓库查询
+        if (StringUtils.hasText(warehouseId)) {
+            wrapper.eq(WarehouseGoods::getWarehouseId, warehouseId);
+        }
+        // 用selectMaps：灵活返回字段，方便补充商品名称
+        List<Map<String, Object>> resultList = this.baseMapper.selectMaps(wrapper);
+
+        // 补充商品名称（关键：用户要看到商品名，不是只看ID）
+        for (Map<String, Object> record : resultList) {
+            String goodsId = (String) record.get("goods_id");
+            XmutGoods goods = xmutGoodsMapper.selectById(goodsId);
+            // 兼容商品已删除的情况
+            record.put("goods_name", goods != null ? goods.getName() : "【商品已删除】");
+            // 补充商品价格（额外优化，提升实用性）
+            record.put("goods_price", goods != null ? goods.getPrice() : 0.0);
+        }
+        return R.success(resultList);
+    }
 }

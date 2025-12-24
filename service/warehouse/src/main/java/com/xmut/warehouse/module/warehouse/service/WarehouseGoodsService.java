@@ -30,4 +30,11 @@ public interface WarehouseGoodsService extends IService<WarehouseGoods> {
 
     // 新增：查询某仓库所有商品（含商品名称、价格等基础信息）
     R<List<Map<String, Object>>> getGoodsWithInfoByWarehouseId(String warehouseId);
+
+    /**
+     * 库存不足预警查询
+     * @param threshold 库存阈值（低于该值预警），默认10
+     * @param warehouseId 仓库ID（可选，不传查全仓库）
+     */
+    R<List<Map<String, Object>>> getLowStockGoods(Integer threshold, String warehouseId);
 }

@@ -5,10 +5,7 @@ import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.warehouse.entity.WarehouseGoods;
 import com.xmut.warehouse.module.warehouse.service.WarehouseGoodsService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -48,5 +45,13 @@ public class WarehouseGoodsController {
     @GetMapping("/warehouse/info/{warehouseId}")
     public R<List<Map<String, Object>>> getGoodsWithInfoByWarehouseId(@PathVariable String warehouseId) {
         return warehouseGoodsService.getGoodsWithInfoByWarehouseId(warehouseId);
+    }
+
+    @GetMapping("/low-stock")
+    public R<List<Map<String, Object>>> getLowStockGoods(
+            @RequestParam(required = false) Integer threshold,
+            @RequestParam(required = false) String warehouseId) {
+        return warehouseGoodsService.getLowStockGoods(threshold, warehouseId);
+
     }
 }
