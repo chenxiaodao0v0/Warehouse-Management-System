@@ -138,10 +138,18 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
         }
     }
 
-    // ========== 保留：查询所有商品基础信息 ==========
     @Override
-    public R<List<XmutGoods>> getAllGoods() {
-        List<XmutGoods> goodsList = this.list();
+    public R<List<XmutGoods>> getGoodsByNameLike(String goodsName) {
+        // 参数校验：关键词不能为空
+        if (!StringUtils.hasText(goodsName)) {
+            return R.fail("商品名称关键词不能为空");
+        }
+        LambdaQueryWrapper<XmutGoods> wrapper = new LambdaQueryWrapper<>();
+        // 核心：模糊匹配（like），前后都加%，支持任意位置匹配（比如输"泉水"能搜到"矿泉水"）
+        wrapper.like(XmutGoods::getName, goodsName);
+        // 按创建时间倒序，最新商品在前
+        wrapper.orderByDesc(XmutGoods::getCreateTime);
+        List<XmutGoods> goodsList = this.baseMapper.selectList(wrapper);
         return R.success(goodsList);
     }
 

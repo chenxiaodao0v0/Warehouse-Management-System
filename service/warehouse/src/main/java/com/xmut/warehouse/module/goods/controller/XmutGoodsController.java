@@ -119,4 +119,14 @@ public class XmutGoodsController {
     public R<String> uploadGoodsImg(@RequestParam("file") MultipartFile file) {
         return xmutGoodsService.uploadGoodsImg(file);
     }
+
+    /**
+     * 商品名称模糊查询
+     * 接口：GET /api/goods/name?goodsName=矿泉水
+     * 说明：支持模糊匹配，输“泉水”“矿泉”都能搜到
+     */
+    @GetMapping("/name")
+    public R<List<XmutGoods>> getGoodsByNameLike(@RequestParam String goodsName) {
+        return xmutGoodsService.getGoodsByNameLike(goodsName);
+    }
 }
