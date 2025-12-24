@@ -205,7 +205,6 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             // 情况2：目标仓库不存在该商品 → 新增商品关联目标仓库，库存为调货数量
             targetGoods = new XmutGoods();
             // 复用原商品的核心信息（名称、价格、图片等，从原商品复制）
-            targetGoods.setId(inOutRecord.getGoodsId()); // 复用商品ID（若需唯一ID，可改为IdType.ASSIGN_UUID，这里按你的表结构适配）
             targetGoods.setWarehouseId(inOutRecord.getRelatedWarehouseId()); // 关联目标仓库
             targetGoods.setGoodsName(sourceGoods.getGoodsName()); // 商品名称（从原商品复制）
             targetGoods.setPrice(sourceGoods.getPrice()); // 商品单价（从原商品复制）
