@@ -144,8 +144,8 @@ public class WarehouseGoodsServiceImpl extends ServiceImpl<WarehouseGoodsMapper,
             threshold = 10;
         }
         LambdaQueryWrapper<WarehouseGoods> wrapper = new LambdaQueryWrapper<>();
-        // 核心：库存低于阈值
-        wrapper.lt(WarehouseGoods::getStock, threshold);
+        // 核心：库存低于或等于阈值
+        wrapper.le(WarehouseGoods::getStock, threshold);
         // 可选：指定仓库查询
         if (StringUtils.hasText(warehouseId)) {
             wrapper.eq(WarehouseGoods::getWarehouseId, warehouseId);
