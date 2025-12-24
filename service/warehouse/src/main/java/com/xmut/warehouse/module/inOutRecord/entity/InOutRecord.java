@@ -62,6 +62,7 @@ public class InOutRecord {
     /**
      * 操作备注
      */
+    @TableField("remark")
     private String remark;
 
     /**
