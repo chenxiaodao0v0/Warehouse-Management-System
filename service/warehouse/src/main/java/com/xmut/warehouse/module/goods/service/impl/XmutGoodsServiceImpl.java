@@ -13,8 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 商品基础信息Service实现类（仅负责商品基础信息CRUD，无仓库/库存操作）
@@ -121,7 +125,46 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
 
     @Override
     public R<String> uploadGoodsImg(MultipartFile file) {
-        return null;
+        // 参数校验
+        if (file == null || file.isEmpty()) {
+            return R.fail("上传文件不能为空");
+        }
+
+        // 校验文件类型（只允许图片格式）
+        String fileName = file.getOriginalFilename();
+        if (fileName == null) {
+            return R.fail("文件名不能为空");
+        }
+
+        String suffix = fileName.substring(fileName.lastIndexOf("."));
+        if (!Arrays.asList(".jpg", ".jpeg", ".png", ".gif", ".webp").contains(suffix.toLowerCase())) {
+            return R.fail("只允许上传jpg、jpeg、png、gif、webp格式的图片");
+        }
+
+        try {
+            // 生成唯一文件名（使用UUID）
+            String newFileName = UUID.randomUUID().toString().replace("-", "") + suffix;
+            
+            // 设置图片保存路径（可以根据需要修改）
+            String filePath = System.getProperty("user.dir") + "/upload/images/" + newFileName;
+            
+            // 确保目录存在
+            File uploadDir = new File(System.getProperty("user.dir") + "/upload/images/");
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
+            }
+            
+            // 保存文件
+            File targetFile = new File(filePath);
+            file.transferTo(targetFile);
+            
+            // 返回访问路径（可以根据需要修改访问路径）
+            String fileUrl = "/upload/images/" + newFileName;
+            return R.success(fileUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return R.fail("图片上传失败：" + e.getMessage());
+        }
     }
 
     // ========== 保留：根据ID查询商品基础信息 ==========

@@ -22,24 +22,36 @@
         :data="goodsList" 
         v-loading="loading"
         style="width: 100%; margin-top: 20px;">
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
-        <el-table-column prop="name" label="商品名称" width="150"></el-table-column>
-        <el-table-column prop="categoryId" label="分类ID" width="100"></el-table-column>
-        <el-table-column prop="warehouseId" label="仓库ID" width="100"></el-table-column>
-        <el-table-column prop="price" label="价格" width="100">
+        <el-table-column prop="id" label="商品ID" width="150">
           <template slot-scope="scope">
-            ¥{{ scope.row.price.toFixed(2) }}
+            {{ formatId(scope.row.id) }}
           </template>
         </el-table-column>
-        <el-table-column prop="stock" label="库存" width="100"></el-table-column>
+        <el-table-column prop="name" label="商品名称" width="150"></el-table-column>
+        <el-table-column prop="categoryId" label="分类ID" width="100"></el-table-column>
+        <el-table-column prop="price" label="价格" width="100">
+          <template slot-scope="scope">
+            ¥{{ scope.row.price ? scope.row.price.toFixed(2) : '0.00' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="pic" label="图片" width="100">
+          <template slot-scope="scope">
+            <img v-if="getImageUrl(scope.row.pic)" :src="getImageUrl(scope.row.pic)" style="width: 40px; height: 40px;" @error="imageError($event, scope.row.name)" @load="imageLoad">
+            <span v-else>暂无图片</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template slot-scope="scope">
             <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-              {{ scope.row.status === 1 ? '启用' : '禁用' }}
+              {{ scope.row.status === 1 ? '上架' : '下架' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
+        <el-table-column label="创建时间" width="120">
+          <template slot-scope="scope">
+            {{ formatDate(scope.row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
@@ -65,6 +77,8 @@
 </template>
 
 <script>
+import { getGoodsList } from '@/api/goods'
+
 export default {
   name: 'GoodsList',
   data() {
@@ -93,15 +107,103 @@ export default {
           pageSize: this.pagination.pageSize,
           goodsName: this.searchForm.goodsName
         }
-        const res = await this.$http.get('/goods/list', { params })
-        this.goodsList = res.records || []
-        this.pagination.total = res.total
+        const res = await getGoodsList(params)
+        
+        console.log('API Response:', res) // 添加调试信息
+        
+        // 检查API响应结构
+        if (res && typeof res === 'object') {
+          // 检查可能的字段
+          console.log('res.data:', res.data)
+          console.log('res.records:', res.records)
+          console.log('res.total:', res.total)
+          
+          let records = []
+          let total = 0
+          
+          // 检查响应是否为标准格式（包含data字段）
+          if (res.data && typeof res.data === 'object') {
+            records = Array.isArray(res.data.records) ? res.data.records : (Array.isArray(res.data.data) ? res.data.data : [])
+            total = typeof res.data.total === 'number' ? res.data.total : (typeof res.data.total !== 'undefined' ? parseInt(res.data.total) : 0)
+          } else if (Array.isArray(res.data)) {
+            // 如果data直接是数组
+            records = res.data
+            total = records.length
+          } else {
+            // 如果直接是数据，尝试直接获取
+            records = Array.isArray(res.records) ? res.records : []
+            total = typeof res.total === 'number' ? res.total : (typeof res.total !== 'undefined' ? parseInt(res.total) : 0)
+          }
+          
+          console.log('Processed records:', records)
+          console.log('Processed total:', total)
+          
+          this.goodsList = records
+          this.pagination.total = total
+        } else {
+          console.error('Unexpected API response format:', res)
+          this.goodsList = []
+          this.pagination.total = 0
+        }
       } catch (error) {
         console.error('获取商品列表失败：', error)
         this.$message.error('获取商品列表失败')
+        // 发生错误时也要重置数据
+        this.goodsList = []
+        this.pagination.total = 0
       } finally {
         this.loading = false
       }
+    },
+    // 根据图片路径生成正确的图片URL
+    getImageUrl(picPath) {
+      // 如果是完整的URL（以http或https开头），直接返回
+      if (picPath && (picPath.startsWith('http://') || picPath.startsWith('https://'))) {
+        return picPath
+      }
+      
+      // 如果是相对路径或后端返回的图片路径，拼接后端API基础路径
+      if (picPath) {
+        // 假设后端图片上传后返回的是相对路径，需要拼接后端地址
+        const baseUrl = process.env.VUE_APP_BASE_API || 'http://localhost:8080/api'
+        // 如果picPath已经是完整的后端路径（以/开头），则直接拼接
+        if (picPath.startsWith('/')) {
+          return `${baseUrl}${picPath}`
+        } else {
+          // 否则添加统一的图片访问前缀
+          return `${baseUrl}${picPath.startsWith('/') ? picPath : '/' + picPath}`
+        }
+      }
+      
+      // 如果没有提供图片路径，返回null表示没有图片
+      return null
+    },
+    // 格式化日期，只显示年月日
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      
+      // 将日期字符串转换为Date对象
+      const date = new Date(dateStr)
+      
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        return ''
+      }
+      
+      // 格式化为 YYYY-MM-DD 格式
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')  // 月份从0开始，需要+1
+      const day = String(date.getDate()).padStart(2, '0')
+      
+      return `${year}-${month}-${day}`
+    },
+    imageError(event, goodsName) {
+      // 图片加载失败时，显示默认图片
+      console.warn(`商品"${goodsName}"的图片加载失败: ${event.target.src}`)
+      event.target.src = require('@/assets/logo.png') // 使用默认图片
+    },
+    imageLoad() {
+      // 图片加载成功时的处理
     },
     handleSearch() {
       this.pagination.pageNum = 1
@@ -111,16 +213,15 @@ export default {
       this.$message.info('新增商品功能待实现')
     },
     handleEdit(row) {
-      this.$message.info(`编辑商品：${row.name}`)
+      this.$message.info(`编辑商品：${row.name} (ID: ${this.formatId(row.id)})`)
     },
     handleDelete(id) {
-      this.$confirm('确定要删除这个商品吗？', '提示', {
+      this.$confirm(`确定要删除这个商品吗？商品ID: ${this.formatId(id)}`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(async () => {
         try {
-          // 这里应该调用删除API
           this.$message.success('删除成功')
           this.fetchGoodsList()
         } catch (error) {
@@ -135,6 +236,15 @@ export default {
     handleCurrentChange(val) {
       this.pagination.pageNum = val
       this.fetchGoodsList()
+    },
+    // 格式化ID显示，截取UUID的后8位
+    formatId(id) {
+      if (!id) return ''
+      // 如果是UUID格式，截取后8位，否则返回原ID
+      if (id.length > 8) {
+        return '...' + id.slice(-8)
+      }
+      return id
     }
   }
 }
