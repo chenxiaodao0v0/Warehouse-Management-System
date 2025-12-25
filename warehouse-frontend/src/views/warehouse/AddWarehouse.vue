@@ -22,11 +22,14 @@
         :data="warehouseList" 
         v-loading="loading"
         style="width: 100%; margin-top: 20px;">
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+        <el-table-column prop="id" label="仓库ID" width="150">
+          <template slot-scope="scope">
+            {{ formatId(scope.row.id) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="warehouseName" label="仓库名称" width="150"></el-table-column>
-        <el-table-column prop="warehouseCode" label="仓库编码" width="120"></el-table-column>
-        <el-table-column prop="location" label="位置" width="200"></el-table-column>
-        <el-table-column prop="manager" label="负责人" width="100"></el-table-column>
+        <el-table-column prop="address" label="仓库地址" width="200"></el-table-column>
+        <el-table-column prop="contact" label="负责人" width="100"></el-table-column>
         <el-table-column prop="phone" label="联系电话" width="120"></el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template slot-scope="scope">
@@ -35,7 +38,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
+        <el-table-column label="创建时间" width="150">
+          <template slot-scope="scope">
+            {{ formatDate(scope.row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
@@ -92,8 +99,23 @@ export default {
           warehouseName: this.searchForm.warehouseName
         }
         const res = await getWarehouseList(params)
-        this.warehouseList = res.records || []
-        this.pagination.total = res.total
+        
+        console.log('仓库列表响应:', res) // 添加调试信息
+        
+        // 检查响应结构，兼容不同格式
+        if (res && res.data && res.data.records !== undefined) {
+          // 标准分页响应格式：{ data: { records: [], total: 0 } }
+          this.warehouseList = res.data.records || []
+          this.pagination.total = res.data.total || 0
+        } else if (res && res.records !== undefined) {
+          // 兼容直接返回分页数据格式：{ records: [], total: 0 }
+          this.warehouseList = res.records || []
+          this.pagination.total = res.total || 0
+        } else {
+          // 其他情况，初始化为空数组
+          this.warehouseList = []
+          this.pagination.total = 0
+        }
       } catch (error) {
         console.error('获取仓库列表失败：', error)
         this.$message.error('获取仓库列表失败')
@@ -133,6 +155,34 @@ export default {
     handleCurrentChange(val) {
       this.pagination.pageNum = val
       this.fetchWarehouseList()
+    },
+    // 格式化ID显示，截取UUID的后8位
+    formatId(id) {
+      if (!id) return ''
+      // 如果是UUID格式，截取后8位，否则返回原ID
+      if (id.length > 8) {
+        return '...' + id.slice(-8)
+      }
+      return id
+    },
+    // 格式化日期，只显示年月日
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      
+      // 将日期字符串转换为Date对象
+      const date = new Date(dateStr)
+      
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        return ''
+      }
+      
+      // 格式化为 YYYY-MM-DD 格式
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')  // 月份从0开始，需要+1
+      const day = String(date.getDate()).padStart(2, '0')
+      
+      return `${year}-${month}-${day}`
     }
   }
 }
