@@ -21,7 +21,7 @@ export function getWarehouseList(params) {
  */
 export function getWarehouseById(id) {
   return request({
-    url: `/warehouse/${id}`,
+    url: `/api/warehouse/${id}`,
     method: 'get'
   })
 }
@@ -33,7 +33,7 @@ export function getWarehouseById(id) {
  */
 export function addWarehouse(data) {
   return request({
-    url: '/warehouse/add',
+    url: '/api/warehouse/add',
     method: 'post',
     data
   })
@@ -46,7 +46,7 @@ export function addWarehouse(data) {
  */
 export function updateWarehouse(data) {
   return request({
-    url: '/warehouse/update',
+    url: '/api/warehouse/update',
     method: 'put',
     data
   })
@@ -59,7 +59,7 @@ export function updateWarehouse(data) {
  */
 export function deleteWarehouse(id) {
   return request({
-    url: `/warehouse/${id}`,
+    url: `/api/warehouse/${id}`,
     method: 'delete'
   })
 }

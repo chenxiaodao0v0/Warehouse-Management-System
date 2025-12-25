@@ -3,7 +3,7 @@
     <el-card class="warehouse-card">
       <div slot="header" class="clearfix">
         <span>仓库管理</span>
-        <el-button style="float: right; padding: 3px 0" type="text">操作按钮</el-button>
+        <el-button style="float: right; padding: 3px 0" type="text" @click="handleRefresh">刷新</el-button>
       </div>
       
       <!-- 搜索区域 -->
@@ -14,8 +14,25 @@
           style="width: 200px; margin-right: 10px;"
         ></el-input>
         <el-button type="primary" @click="handleSearch">搜索</el-button>
-        <el-button type="success" @click="handleAdd">新增仓库</el-button>
+        <el-button 
+          type="success" 
+          @click="handleAdd" 
+          :disabled="!enterpriseLoaded"
+          :title="!enterpriseLoaded ? '请先添加企业信息' : ''"
+        >新增仓库</el-button>
       </div>
+      
+      <!-- 企业信息未加载提示 -->
+      <el-alert
+        v-if="!enterpriseLoaded"
+        title="请先添加企业信息"
+        type="warning"
+        description="当前系统缺少企业信息，无法添加仓库。请先在企业信息管理页面添加企业信息。"
+        show-icon
+        :closable="false"
+        style="margin-bottom: 20px;"
+      >
+      </el-alert>
       
       <!-- 表格区域 -->
       <el-table 
@@ -31,6 +48,11 @@
         <el-table-column prop="address" label="仓库地址" width="200"></el-table-column>
         <el-table-column prop="contact" label="负责人" width="100"></el-table-column>
         <el-table-column prop="phone" label="联系电话" width="120"></el-table-column>
+        <el-table-column prop="enterpriseName" label="所属企业" width="150">
+          <template slot-scope="scope">
+            {{ enterpriseInfo.name || '加载中...' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template slot-scope="scope">
             <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -64,14 +86,52 @@
       >
       </el-pagination>
     </el-card>
+    
+    <!-- 新增/编辑仓库对话框 -->
+    <el-dialog
+      :title="isEdit ? '编辑仓库' : '新增仓库'"
+      :visible.sync="dialogVisible"
+      width="50%"
+      :before-close="handleCloseDialog"
+    >
+      <el-form :model="warehouseForm" :rules="warehouseRules" ref="warehouseForm" label-width="100px">
+        <el-form-item label="仓库名称" prop="warehouseName">
+          <el-input v-model="warehouseForm.warehouseName" placeholder="请输入仓库名称"></el-input>
+        </el-form-item>
+        <el-form-item label="仓库地址" prop="address">
+          <el-input v-model="warehouseForm.address" placeholder="请输入仓库地址"></el-input>
+        </el-form-item>
+        <el-form-item label="负责人" prop="contact">
+          <el-input v-model="warehouseForm.contact" placeholder="请输入负责人姓名"></el-input>
+        </el-form-item>
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="warehouseForm.phone" placeholder="请输入联系电话"></el-input>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="warehouseForm.status" placeholder="请选择状态">
+            <el-option label="启用" :value="1"></el-option>
+            <el-option label="禁用" :value="0"></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="handleCloseDialog">取 消</el-button>
+        <el-button type="primary" @click="handleAddSubmit">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getWarehouseList } from '@/api/warehouse'
+import { getWarehouseList, addWarehouse, updateWarehouse } from '@/api/warehouse'
+import { getEnterpriseInfo } from '@/api/enterprise'
 
 export default {
   name: 'AddWarehouse',
+  created() {
+    this.fetchWarehouseList()
+    this.fetchEnterpriseInfo()
+  },
   data() {
     return {
       warehouseList: [],
@@ -83,13 +143,100 @@ export default {
         pageNum: 1,
         pageSize: 10,
         total: 0
+      },
+      dialogVisible: false,
+      isEdit: false, // 添加编辑状态标识
+      enterpriseLoaded: false, // 标记企业信息是否已加载
+      defaultEnterpriseId: '', // 默认企业ID
+      enterpriseInfo: {}, // 企业信息
+      warehouseForm: {
+        warehouseName: '',
+        address: '',
+        contact: '',
+        phone: '',
+        status: 1 // 默认启用
+      },
+      warehouseRules: {
+        warehouseName: [
+          { required: true, message: '请输入仓库名称', trigger: 'blur' }
+        ],
+        address: [
+          { required: true, message: '请输入仓库地址', trigger: 'blur' }
+        ],
+        contact: [
+          { required: true, message: '请输入负责人姓名', trigger: 'blur' }
+        ],
+        phone: [
+          { required: true, message: '请输入联系电话', trigger: 'blur' },
+          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码格式', trigger: 'blur' }
+        ],
+        status: [
+          { required: true, message: '请选择状态', trigger: 'change' }
+        ]
       }
     }
   },
-  created() {
-    this.fetchWarehouseList()
-  },
   methods: {
+    // 获取企业信息
+    async fetchEnterpriseInfo() {
+      try {
+        const res = await getEnterpriseInfo()
+        
+        console.log('企业信息响应:', res) // 添加调试信息
+        
+        // 检查响应结构是否为标准格式
+        if (res && res.code === 200 && res.data) {
+          // 标准响应格式：{code: 200, data: {企业信息}}
+          this.enterpriseInfo = res.data
+          this.defaultEnterpriseId = res.data.id
+          this.enterpriseLoaded = true
+        } else if (res && res.id) {
+          // 直接返回企业对象格式：{id: ..., name: ..., ...}
+          this.enterpriseInfo = res
+          this.defaultEnterpriseId = res.id
+          this.enterpriseLoaded = true
+        } else if (res && res.code !== 200) {
+          // 响应code不是200，说明后端返回了错误信息
+          console.error('后端返回错误响应:', res) // 添加错误日志
+          this.$message.error('获取企业信息失败：' + (res.msg || '未知错误'))
+        } else {
+          console.error('企业信息响应格式错误:', res) // 添加错误日志
+          this.$message.error('获取企业信息失败：响应格式错误')
+        }
+      } catch (error) {
+        console.error('获取企业信息失败：', error)
+        
+        // 检查错误响应
+        if (error.response) {
+          console.error('后端响应详情:', error.response) // 添加错误日志
+          
+          // 检查是否是HTTP 2xx范围的状态码，但业务逻辑返回失败
+          if (error.response.status >= 200 && error.response.status < 300) {
+            // HTTP状态成功，但业务逻辑失败
+            const res = error.response.data
+            if (res && res.code !== 200) {
+              this.$message.error('获取企业信息失败：' + (res.msg || '业务逻辑错误'))
+            }
+          }
+          
+          // 服务器响应了错误状态码
+          if (error.response.status === 500) {
+            // 500错误通常表示服务器内部错误
+            this.$message.error('服务器内部错误：' + (error.response.data.message || '可能是因为没有企业数据'))
+          } else if (error.response.data && error.response.data.msg) {
+            this.$message.error('获取企业信息失败：' + error.response.data.msg)
+          } else {
+            this.$message.error('获取企业信息失败，状态码：' + error.response.status)
+          }
+        } else if (error.request) {
+          // 请求已发出但没有收到响应
+          this.$message.error('无法连接到服务器，请检查网络连接')
+        } else {
+          // 其他错误
+          this.$message.error('获取企业信息失败：' + error.message)
+        }
+      }
+    },
     async fetchWarehouseList() {
       this.loading = true
       try {
@@ -127,11 +274,36 @@ export default {
       this.pagination.pageNum = 1
       this.fetchWarehouseList()
     },
+    handleRefresh() {
+      this.fetchWarehouseList()
+    },
     handleAdd() {
-      this.$message.info('新增仓库功能待实现')
+      // 重置表单
+      this.resetForm()
+      this.dialogVisible = true
+    },
+    resetForm() {
+      this.warehouseForm = {
+        warehouseName: '',
+        address: '',
+        contact: '',
+        phone: '',
+        status: 1 // 默认启用
+      }
+      if (this.$refs.warehouseForm) {
+        this.$refs.warehouseForm.resetFields()
+      }
+    },
+    handleCloseDialog() {
+      this.dialogVisible = false
+      this.isEdit = false // 重置编辑状态
+      this.resetForm()
     },
     handleEdit(row) {
-      this.$message.info(`编辑仓库：${row.warehouseName}`)
+      // 将当前仓库数据填充到表单中
+      this.warehouseForm = { ...row } // 复制仓库数据到表单
+      this.dialogVisible = true // 显示对话框
+      this.isEdit = true // 标记为编辑状态
     },
     handleDelete(id) {
       this.$confirm('确定要删除这个仓库吗？', '提示', {
@@ -183,6 +355,47 @@ export default {
       const day = String(date.getDate()).padStart(2, '0')
       
       return `${year}-${month}-${day}`
+    },
+    async handleAddSubmit() {
+      // 检查是否已获取到企业ID
+      if (!this.defaultEnterpriseId) {
+        this.$message.error('无法获取企业信息，请先添加企业信息')
+        return
+      }
+      
+      this.$refs.warehouseForm.validate(async (valid) => {
+        if (valid) {
+          try {
+            // 将默认企业ID添加到表单数据中
+            const formData = {
+              ...this.warehouseForm,
+              enterpriseId: this.defaultEnterpriseId
+            }
+            
+            if (this.isEdit) {
+              // 编辑仓库
+              await updateWarehouse(formData)
+              this.$message.success('修改仓库成功')
+            } else {
+              // 新增仓库
+              await addWarehouse(formData)
+              this.$message.success('添加仓库成功')
+            }
+            
+            this.dialogVisible = false
+            // 重置表单
+            this.resetForm()
+            // 刷新仓库列表
+            this.fetchWarehouseList()
+          } catch (error) {
+            console.error(this.isEdit ? '修改仓库失败：' : '添加仓库失败：', error)
+            this.$message.error(this.isEdit ? '修改仓库失败' : '添加仓库失败')
+          }
+        } else {
+          this.$message.error('请填写正确的仓库信息')
+          return false
+        }
+      })
     }
   }
 }

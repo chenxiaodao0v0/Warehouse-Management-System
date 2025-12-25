@@ -1,6 +1,7 @@
 package com.xmut.warehouse.module.enterprise.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -16,5 +17,6 @@ public class XmutEnterprise {
     private String contact; // 联系人
     private String phone; // 联系电话
     private String remark; // 备注
+    @TableField("update_time")
     private Date updateTime; // 最后更新时间
 }
