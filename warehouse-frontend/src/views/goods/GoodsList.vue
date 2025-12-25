@@ -366,11 +366,47 @@ export default {
         type: 'warning'
       }).then(async () => {
         try {
-          this.$message.success('删除成功')
-          this.fetchGoodsList()
+          // 导入删除商品的API
+          const { deleteGoods } = await import('@/api/goods')
+          const response = await deleteGoods(id)
+          
+          console.log('删除API响应:', response) // 调试信息
+          
+          // 检查响应是否成功
+          // 优先检查code字段，如果不存在则检查是否为成功状态
+          if(response) {
+            if(response.code !== undefined) {
+              // 后端返回了code字段
+              if(response.code === 200) {
+                this.$message.success('删除成功')
+                this.fetchGoodsList() // 重新获取商品列表
+              } else {
+                this.$message.error(response.msg || '删除失败')
+              }
+            } else {
+              // 没有code字段，可能是直接返回数据
+              this.$message.success('删除成功')
+              this.fetchGoodsList() // 重新获取商品列表
+            }
+          } else {
+            this.$message.error('删除失败')
+          }
         } catch (error) {
-          this.$message.error('删除失败')
+          console.error('删除商品失败：', error)
+          console.error('错误详情：', error.response) // 调试信息
+          
+          // 即使出现错误，也可能是删除成功但响应处理有问题，刷新列表
+          if (error.response && error.response.status >= 200 && error.response.status < 300) {
+            // HTTP状态码表示成功，但可能响应格式有误
+            this.$message.success('删除成功')
+            this.fetchGoodsList()
+          } else {
+            this.$message.error('删除失败')
+          }
         }
+      }).catch(() => {
+        // 用户取消删除
+        this.$message.info('已取消删除')
       })
     },
     handleSizeChange(val) {
