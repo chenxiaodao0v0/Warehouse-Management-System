@@ -27,6 +27,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     // 1. 定义白名单（登录接口等无需Token校验的接口）
     private final List<String> whiteList = Arrays.asList("/api/user/login");
+    // 添加静态资源路径到白名单
+    private final List<String> staticResourceList = Arrays.asList("/upload/", "/static/", "/error", "/favicon.ico");
     // 路径匹配器（支持ant风格路径，和Security的antMatchers一致）
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -39,6 +41,15 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         for (String whitePath : whiteList) {
             if (pathMatcher.match(whitePath, requestURI)) {
                 // 白名单接口，直接执行后续过滤器链（放行）
+                chain.doFilter(request, response);
+                return; // 终止当前过滤器逻辑，避免后续Token校验
+            }
+        }
+
+        // 4. 判断当前请求是否为静态资源，若是则直接放行
+        for (String staticPath : staticResourceList) {
+            if (requestURI.startsWith(staticPath)) {
+                // 静态资源，直接执行后续过滤器链（放行）
                 chain.doFilter(request, response);
                 return; // 终止当前过滤器逻辑，避免后续Token校验
             }

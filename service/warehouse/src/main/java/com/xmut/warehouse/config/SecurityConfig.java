@@ -21,10 +21,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .csrf().disable() // 关闭CSRF（前后端分离必关）
                 .authorizeRequests()
+                // 优先放行静态资源和上传的文件（放在最前面，确保优先匹配）
+                .antMatchers("/upload/**", "/static/**", "/error", "/favicon.ico").permitAll()
                 // 放行登录接口
                 .antMatchers("/api/user/login").permitAll()
-                // 放行静态资源和其他必要的接口
-                .antMatchers("/static/**", "/error").permitAll()
                 // 预检请求必须放行，否则CORS无法正常工作
                 .antMatchers("OPTIONS/**").permitAll()
                 // 其他所有请求都需要认证
@@ -33,7 +33,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 // 关闭默认表单登录和HTTP基础认证（前后端分离无需）
                 .formLogin().disable()
                 .httpBasic().disable()
-                // JWT过滤器放在UsernamePasswordAuthenticationFilter之前（原有逻辑不变）
+                // JWT过滤器放在UsernamePasswordAuthenticationFilter之前
                 .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
     }
 }

@@ -217,6 +217,9 @@ export default {
           this.goodsList = []
           this.pagination.total = 0
         }
+        
+        // 调试信息
+        console.log('获取到的商品列表:', this.goodsList)
       } catch (error) {
         console.error('获取商品列表失败：', error)
         this.$message.error('获取商品列表失败')
@@ -240,25 +243,34 @@ export default {
     },
     // 根据图片路径生成正确的图片URL
     getImageUrl(picPath) {
+      console.log('处理图片路径:', picPath) // 调试信息
+      
       // 如果是完整的URL（以http或https开头），直接返回
       if (picPath && (picPath.startsWith('http://') || picPath.startsWith('https://'))) {
+        console.log('完整URL:', picPath) // 调试信息
         return picPath
       }
       
       // 如果是相对路径或后端返回的图片路径，拼接后端API基础路径
       if (picPath) {
-        // 假设后端图片上传后返回的是相对路径，需要拼接后端地址
-        const baseUrl = process.env.VUE_APP_BASE_API || 'http://localhost:8080/api'
+        // 获取基础API地址，如果环境变量未设置，则使用默认地址
+        const baseUrl = process.env.VUE_APP_BASE_API || 'http://localhost:8080'
         // 如果picPath已经是完整的后端路径（以/开头），则直接拼接
         if (picPath.startsWith('/')) {
-          return `${baseUrl}${picPath}`
+          // 移除重复的斜杠
+          const fullPath = `${baseUrl}${picPath}`
+          console.log('拼接后路径:', fullPath) // 调试信息
+          return fullPath
         } else {
           // 否则添加统一的图片访问前缀
-          return `${baseUrl}${picPath.startsWith('/') ? picPath : '/' + picPath}`
+          const fullPath = `${baseUrl}/${picPath}`
+          console.log('拼接后路径:', fullPath) // 调试信息
+          return fullPath
         }
       }
       
       // 如果没有提供图片路径，返回null表示没有图片
+      console.log('没有提供图片路径') // 调试信息
       return null
     },
     // 格式化日期，只显示年月日
@@ -283,6 +295,7 @@ export default {
     imageError(event, goodsName) {
       // 图片加载失败时，显示默认图片
       console.warn(`商品"${goodsName}"的图片加载失败: ${event.target.src}`)
+      console.error(`图片加载失败，URL:`, event.target.src)
       event.target.src = require('@/assets/logo.png') // 使用默认图片
     },
     imageLoad() {
