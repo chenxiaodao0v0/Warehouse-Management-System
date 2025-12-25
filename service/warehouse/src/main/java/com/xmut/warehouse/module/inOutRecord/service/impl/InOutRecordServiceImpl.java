@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xmut.warehouse.common.result.R;
+import com.xmut.warehouse.common.util.PhoneValidator;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
 import com.xmut.warehouse.module.goods.mapper.XmutGoodsMapper;
 import com.xmut.warehouse.module.inOutRecord.entity.InOutRecord;
@@ -61,6 +62,9 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         if (!StringUtils.hasText(inOutRecord.getContactPhone())) {
             return R.fail("对接人电话不能为空");
         }
+        if (!PhoneValidator.isValidPhone(inOutRecord.getContactPhone())) {
+            return R.fail("对接人电话格式不正确");
+        }
         if (!StringUtils.hasText(inOutRecord.getOperatorId())) {
             return R.fail("操作人ID不能为空");
         }
@@ -114,6 +118,9 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         }
         if (!StringUtils.hasText(inOutRecord.getContactPhone())) {
             return R.fail("对接人电话不能为空");
+        }
+        if (!PhoneValidator.isValidPhone(inOutRecord.getContactPhone())) {
+            return R.fail("对接人电话格式不正确");
         }
         if (!StringUtils.hasText(inOutRecord.getOperatorId())) {
             return R.fail("操作人ID不能为空");
@@ -173,6 +180,9 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         }
         if (!StringUtils.hasText(inOutRecord.getContactPhone())) {
             return R.fail("对接人电话不能为空");
+        }
+        if (!PhoneValidator.isValidPhone(inOutRecord.getContactPhone())) {
+            return R.fail("对接人电话格式不正确");
         }
         if (!StringUtils.hasText(inOutRecord.getOperatorId())) {
             return R.fail("操作人ID不能为空");
