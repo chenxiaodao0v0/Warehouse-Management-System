@@ -8,8 +8,8 @@ import request from '@/utils/request'
  */
 export function userLogin(data) {
   return request({
-    url: '/api/user/login', // 对应后端接口路径，代理自动转发到后端
+    url: '/user/login', // 去掉重复的/api（baseURL已包含）
     method: 'post',
-    params: data // 对应后端@RequestParam，用params传递（若后端用@RequestBody，用data传递）
+    data: data // 改用data传递请求体（适配后端@RequestBody）
   })
 }

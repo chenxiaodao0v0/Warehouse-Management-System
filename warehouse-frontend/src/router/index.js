@@ -1,74 +1,70 @@
-// Vue2 路由配置（Vue Router 3）
 import Vue from 'vue'
 import Router from 'vue-router'
-import { Message } from 'element-ui' // 提示组件
-import store from '@/store' // 引入Vuex
-import EnterpriseInfo from '@/pages/enterprise/EnterpriseInfo.vue'
-// 导入页面组件
-import Login from '@/pages/LoginPage.vue' // 登录页
-import Index from '@/pages/IndexPage.vue' // 首页
+import Login from '@/views/Login'
+import HomeView from '@/views/HomeView'
+import AddWarehouse from '@/views/warehouse/AddWarehouse'
+import GoodsList from '@/views/goods/GoodsList'
+import EnterpriseInfo from '@/views/enterprise/EnterpriseInfo'
+import InOutRecord from '@/views/inOutRecord/InOutRecord'
+import store from '@/store'
+// 导入Element的Message组件
+import { Message } from 'element-ui'
 
-// Vue2 全局注册Router
 Vue.use(Router)
 
-// 路由规则配置
-const routes = [
-  {
-    path: '/',
-    redirect: '/index' // 默认跳转首页
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login,
-    meta: { requiresAuth: false } // 无需登录即可访问
-  },
-  {
-    path: '/index',
-    name: 'Index',
-    component: Index,
-    meta: { requiresAuth: true } // 需要登录才能访问
-  },
-   {
-    path: '/enterprise/info',
-    name: 'EnterpriseInfo',
-    component: EnterpriseInfo,
-    meta: { requiresAuth: true } // 需要登录才能访问
-  }
-  // 后续可添加其他功能模块路由（如用户管理、仓库管理）
-  // {
-  //   path: '/user/list',
-  //   name: 'UserList',
-  //   component: () => import('@/pages/user/UserList.vue'), // 懒加载（推荐）
-  //   meta: { requiresAuth: true }
-  // }
-]
-
-// 创建Router实例（Vue2写法）
 const router = new Router({
-  mode: 'hash', // Vue2 推荐hash模式（兼容性更好，无需后端配置），history模式需后端支持
-  routes // 路由规则
+  mode: 'hash',
+  routes: [
+    {
+      path: '/login',
+      name: 'Login',
+      component: Login,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/',
+      name: 'Home',
+      component: HomeView,
+      meta: { requiresAuth: true },
+      redirect: '/goods/list',
+      children: [
+        {
+          path: 'warehouse/add',
+          name: 'AddWarehouse',
+          component: AddWarehouse
+        },
+        {
+          path: 'goods/list',
+          name: 'GoodsList',
+          component: GoodsList
+        },
+        {
+          path: 'enterprise/info',
+          name: 'EnterpriseInfo',
+          component: EnterpriseInfo
+        },
+        {
+          path: 'inout/record',
+          name: 'InOutRecord',
+          component: InOutRecord
+        }
+      ]
+    },
+    {
+      path: '*',
+      redirect: '/goods/list'
+    }
+  ]
 })
 
-// 路由守卫：拦截未登录用户访问需要权限的页面
 router.beforeEach((to, from, next) => {
-  // 判断当前页面是否需要登录权限
-  if (to.meta.requiresAuth) {
-    // 从Vuex中获取Token
-    const token = store.state.token
-    if (token) {
-      // 有Token，放行
-      next()
-    } else {
-      // 无Token，提示并跳转登录页
-      Message({
-        message: '请先登录系统',
-        type: 'warning'
-      })
-      next('/login') // 跳转登录页
-    }
+  const token = store.state.user.token
+  
+  if (to.meta.requiresAuth && !token) {
+    // 使用导入的Message组件，避免未初始化问题
+    Message.warning('请先登录')
+    next('/login')
   } else {
-    // 无需登录，直接放行
     next()
   }
 })

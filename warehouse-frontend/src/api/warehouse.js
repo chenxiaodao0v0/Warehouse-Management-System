@@ -1,0 +1,65 @@
+// 仓库模块接口封装
+import request from '@/utils/request'
+
+/**
+ * 获取仓库列表
+ * @param {Object} params 查询参数（pageNum, pageSize, warehouseName）
+ * @returns Promise
+ */
+export function getWarehouseList(params) {
+  return request({
+    url: '/warehouse/page',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 根据ID获取仓库详情
+ * @param {String} id 仓库ID
+ * @returns Promise
+ */
+export function getWarehouseById(id) {
+  return request({
+    url: `/warehouse/${id}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 新增仓库
+ * @param {Object} data 仓库数据
+ * @returns Promise
+ */
+export function addWarehouse(data) {
+  return request({
+    url: '/warehouse/add',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 修改仓库
+ * @param {Object} data 仓库数据
+ * @returns Promise
+ */
+export function updateWarehouse(data) {
+  return request({
+    url: '/warehouse/update',
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * 删除仓库
+ * @param {String} id 仓库ID
+ * @returns Promise
+ */
+export function deleteWarehouse(id) {
+  return request({
+    url: `/warehouse/${id}`,
+    method: 'delete'
+  })
+}

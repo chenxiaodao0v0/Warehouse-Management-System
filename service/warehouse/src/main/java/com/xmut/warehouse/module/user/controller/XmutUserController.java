@@ -4,8 +4,8 @@ import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.user.service.XmutUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -22,12 +22,13 @@ public class XmutUserController {
 
     /**
      * 用户登录接口
-     * @param username 登录账号
-     * @param password 登录密码
+     * @param loginData 登录参数（包含username和password）
      * @return 登录结果（Token + 用户信息）
      */
     @PostMapping("/login")
-    public R<?> login(@RequestParam String username, @RequestParam String password) {
+    public R<?> login(@RequestBody Map<String, String> loginData) {
+        String username = loginData.get("username");
+        String password = loginData.get("password");
         // 调用Service层登录方法
         return userService.login(username, password);
     }

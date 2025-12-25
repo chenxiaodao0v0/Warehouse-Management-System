@@ -17,13 +17,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+                .cors() // 启用CORS支持
+                .and()
                 .csrf().disable() // 关闭CSRF（前后端分离必关）
                 .authorizeRequests()
-                // 确保登录接口路径和实际一致，精准放行
+                // 放行登录接口
                 .antMatchers("/api/user/login").permitAll()
-                // 若有注册、验证码等接口，也可在此添加放行
-                // .antMatchers("/api/user/register").permitAll()
-                // 所有非白名单接口需要认证
+                // 放行静态资源和其他必要的接口
+                .antMatchers("/static/**", "/error").permitAll()
+                // 预检请求必须放行，否则CORS无法正常工作
+                .antMatchers("OPTIONS/**").permitAll()
+                // 其他所有请求都需要认证
                 .anyRequest().authenticated()
                 .and()
                 // 关闭默认表单登录和HTTP基础认证（前后端分离无需）
