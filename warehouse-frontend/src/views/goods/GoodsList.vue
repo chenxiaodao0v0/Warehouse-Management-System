@@ -78,9 +78,9 @@
       </el-pagination>
     </el-card>
     
-    <!-- 新增商品对话框 -->
+    <!-- 新增/编辑商品对话框 -->
     <el-dialog
-      title="新增商品"
+      :title="isEdit ? '编辑商品' : '新增商品'"
       :visible.sync="dialogVisible"
       width="50%"
       :before-close="handleCloseDialog"
@@ -114,6 +114,9 @@
             <img v-if="goodsForm.pic" :src="getImageUrl(goodsForm.pic)" class="avatar" alt="商品图片">
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
+          <div class="upload-button">
+            <el-button type="primary" size="small" @click="triggerUpload">选择图片</el-button>
+          </div>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="goodsForm.status" placeholder="请选择状态">
@@ -158,6 +161,7 @@ export default {
         total: 0
       },
       dialogVisible: false,
+      isEdit: false, // 添加编辑状态标识
       goodsForm: {
         name: '',
         price: null,
@@ -325,6 +329,7 @@ export default {
     },
     handleCloseDialog() {
       this.dialogVisible = false
+      this.isEdit = false // 重置编辑状态
       this.resetForm()
     },
     handleUploadSuccess(response, file) {
@@ -335,20 +340,39 @@ export default {
         this.$message.error('图片上传失败')
       }
     },
+    triggerUpload() {
+      // 触发上传组件的点击事件
+      const uploadEl = document.querySelector('.avatar-uploader .el-upload')
+      if (uploadEl) {
+        uploadEl.click()
+      } else {
+        this.$message.error('找不到上传组件')
+      }
+    },
     async handleAddSubmit() {
       this.$refs.goodsForm.validate(async (valid) => {
         if (valid) {
           try {
-            await addGoods(this.goodsForm)
-            this.$message.success('添加商品成功')
+            if (this.isEdit) {
+              // 编辑商品
+              const { updateGoods } = await import('@/api/goods')
+              await updateGoods(this.goodsForm)
+              this.$message.success('修改商品成功')
+            } else {
+              // 添加商品
+              const { addGoods } = await import('@/api/goods')
+              await addGoods(this.goodsForm)
+              this.$message.success('添加商品成功')
+            }
+            
             this.dialogVisible = false
             // 重置表单
             this.resetForm()
             // 刷新商品列表
             this.fetchGoodsList()
           } catch (error) {
-            console.error('添加商品失败：', error)
-            this.$message.error('添加商品失败')
+            console.error(this.isEdit ? '修改商品失败：' : '添加商品失败：', error)
+            this.$message.error(this.isEdit ? '修改商品失败' : '添加商品失败')
           }
         } else {
           this.$message.error('请填写正确的商品信息')
@@ -357,7 +381,10 @@ export default {
       })
     },
     handleEdit(row) {
-      this.$message.info(`编辑商品：${row.name} (ID: ${this.formatId(row.id)})`)
+      // 将当前商品数据填充到表单中
+      this.goodsForm = { ...row } // 复制商品数据到表单
+      this.dialogVisible = true // 显示对话框
+      this.isEdit = true // 标记为编辑状态
     },
     handleDelete(id) {
       this.$confirm(`确定要删除这个商品吗？商品ID: ${this.formatId(id)}`, '提示', {
@@ -478,5 +505,8 @@ export default {
   width: 178px;
   height: 178px;
   display: block;
+}
+.upload-button {
+  margin-top: 10px;
 }
 </style>
