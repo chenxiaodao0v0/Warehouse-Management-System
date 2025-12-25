@@ -8,7 +8,7 @@ import request from '@/utils/request'
  */
 export function userLogin(data) {
   return request({
-    url: '/user/login', // 去掉重复的/api（baseURL已包含）
+    url: '/api/user/login', // 使用完整API路径（因为baseURL已修改为http://localhost:8080）
     method: 'post',
     data: data // 改用data传递请求体（适配后端@RequestBody）
   })

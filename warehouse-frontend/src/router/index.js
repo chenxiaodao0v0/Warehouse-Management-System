@@ -14,7 +14,7 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    redirect: '/dashboard' // 重定向到仪表板
+    redirect: '/goods/list' 
   },
   {
     path: '/dashboard',
