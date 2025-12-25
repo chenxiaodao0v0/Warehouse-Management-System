@@ -27,6 +27,19 @@ export function getGoodsById(id) {
 }
 
 /**
+ * 新增商品
+ * @param {Object} data 商品数据
+ * @returns Promise
+ */
+export function addGoods(data) {
+  return request({
+    url: '/api/goods/add',
+    method: 'post',
+    data
+  })
+}
+
+/**
  * 修改商品
  * @param {Object} data 商品数据
  * @returns Promise

@@ -28,7 +28,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="商品名称" width="150"></el-table-column>
-        <el-table-column prop="categoryId" label="分类ID" width="100"></el-table-column>
+        <el-table-column prop="categoryId" label="商品分类" width="150">
+          <template slot-scope="scope">
+            {{ getCategoryName(scope.row.categoryId) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="price" label="价格" width="100">
           <template slot-scope="scope">
             ¥{{ scope.row.price ? scope.row.price.toFixed(2) : '0.00' }}
@@ -73,11 +77,71 @@
       >
       </el-pagination>
     </el-card>
+    
+    <!-- 新增商品对话框 -->
+    <el-dialog
+      title="新增商品"
+      :visible.sync="dialogVisible"
+      width="50%"
+      :before-close="handleCloseDialog"
+    >
+      <el-form :model="goodsForm" :rules="goodsRules" ref="goodsForm" label-width="100px">
+        <el-form-item label="商品名称" prop="name">
+          <el-input v-model="goodsForm.name" placeholder="请输入商品名称"></el-input>
+        </el-form-item>
+        <el-form-item label="商品价格" prop="price">
+          <el-input-number v-model="goodsForm.price" :precision="2" :step="0.1" placeholder="请输入商品价格"></el-input-number>
+        </el-form-item>
+        <el-form-item label="商品分类" prop="categoryId">
+          <el-select v-model="goodsForm.categoryId" placeholder="请选择商品分类" style="width: 100%">
+            <el-option
+              v-for="category in categoryList"
+              :key="category.id"
+              :label="category.name"
+              :value="category.id"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="商品图片">
+          <el-upload
+            class="avatar-uploader"
+            :action="uploadUrl"
+            :show-file-list="false"
+            :on-success="handleUploadSuccess"
+            :headers="uploadHeaders"
+            accept="image/*"
+          >
+            <img v-if="goodsForm.pic" :src="getImageUrl(goodsForm.pic)" class="avatar" alt="商品图片">
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="goodsForm.status" placeholder="请选择状态">
+            <el-option label="上架" :value="1"></el-option>
+            <el-option label="下架" :value="2"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+            type="textarea"
+            :rows="3"
+            placeholder="请输入备注信息"
+            v-model="goodsForm.remark">
+          </el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="handleCloseDialog">取 消</el-button>
+        <el-button type="primary" @click="handleAddSubmit">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getGoodsList } from '@/api/goods'
+import { getGoodsList, addGoods } from '@/api/goods'
+import { getCategoryList } from '@/api/goodsCategory'
+import store from '@/store'
 
 export default {
   name: 'GoodsListPage',
@@ -92,11 +156,41 @@ export default {
         pageNum: 1,
         pageSize: 10,
         total: 0
+      },
+      dialogVisible: false,
+      goodsForm: {
+        name: '',
+        price: null,
+        categoryId: '',
+        pic: '',
+        status: 1, // 默认上架
+        remark: ''
+      },
+      categoryList: [], // 分类列表
+      goodsRules: {
+        name: [
+          { required: true, message: '请输入商品名称', trigger: 'blur' }
+        ],
+        price: [
+          { required: true, message: '请输入商品价格', trigger: 'blur' },
+          { type: 'number', min: 0, message: '价格必须为非负数', trigger: 'blur' }
+        ],
+        categoryId: [
+          { required: true, message: '请选择商品分类', trigger: 'change' }
+        ],
+        status: [
+          { required: true, message: '请选择商品状态', trigger: 'change' }
+        ]
+      },
+      uploadUrl: `${process.env.VUE_APP_BASE_API || 'http://localhost:8080'}/api/goods/upload`,
+      uploadHeaders: {
+        'Authorization': `Bearer ${store.state.user.token}`
       }
     }
   },
   created() {
     this.fetchGoodsList()
+    this.fetchCategoryList()
   },
   methods: {
     async fetchGoodsList() {
@@ -131,6 +225,17 @@ export default {
         this.pagination.total = 0
       } finally {
         this.loading = false
+      }
+    },
+    // 获取商品分类列表
+    async fetchCategoryList() {
+      try {
+        const res = await getCategoryList()
+        this.categoryList = res || []
+      } catch (error) {
+        console.error('获取商品分类列表失败：', error)
+        this.$message.error('获取商品分类列表失败')
+        this.categoryList = []
       }
     },
     // 根据图片路径生成正确的图片URL
@@ -188,7 +293,55 @@ export default {
       this.fetchGoodsList()
     },
     handleAdd() {
-      this.$message.info('新增商品功能待实现')
+      // 重置表单
+      this.resetForm()
+      this.dialogVisible = true
+    },
+    resetForm() {
+      this.goodsForm = {
+        name: '',
+        price: null,
+        categoryId: '',
+        pic: '',
+        status: 1, // 默认上架
+        remark: ''
+      }
+      if (this.$refs.goodsForm) {
+        this.$refs.goodsForm.resetFields()
+      }
+    },
+    handleCloseDialog() {
+      this.dialogVisible = false
+      this.resetForm()
+    },
+    handleUploadSuccess(response, file) {
+      // 上传成功后更新图片路径
+      if (response && response.data) {
+        this.goodsForm.pic = response.data
+      } else {
+        this.$message.error('图片上传失败')
+      }
+    },
+    async handleAddSubmit() {
+      this.$refs.goodsForm.validate(async (valid) => {
+        if (valid) {
+          try {
+            await addGoods(this.goodsForm)
+            this.$message.success('添加商品成功')
+            this.dialogVisible = false
+            // 重置表单
+            this.resetForm()
+            // 刷新商品列表
+            this.fetchGoodsList()
+          } catch (error) {
+            console.error('添加商品失败：', error)
+            this.$message.error('添加商品失败')
+          }
+        } else {
+          this.$message.error('请填写正确的商品信息')
+          return false
+        }
+      })
     },
     handleEdit(row) {
       this.$message.info(`编辑商品：${row.name} (ID: ${this.formatId(row.id)})`)
@@ -223,6 +376,16 @@ export default {
         return '...' + id.slice(-8)
       }
       return id
+    },
+    
+    // 根据分类ID获取分类名称
+    getCategoryName(categoryId) {
+      if (!categoryId || !this.categoryList || this.categoryList.length === 0) {
+        return '未知分类'
+      }
+      
+      const category = this.categoryList.find(cat => cat.id === categoryId)
+      return category ? category.name : '未知分类'
     }
   }
 }
@@ -242,5 +405,29 @@ export default {
   margin-bottom: 20px;
   display: flex;
   align-items: center;
+}
+
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
+}
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+}
+.avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
 }
 </style>
