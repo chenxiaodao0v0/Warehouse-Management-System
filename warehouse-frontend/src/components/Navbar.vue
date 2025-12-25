@@ -4,7 +4,7 @@
       <h3>仓库管理系统</h3>
     </div>
     <div class="navbar-user">
-      <span class="user-info">欢迎，{{ userInfo.nickname || userInfo.username }}</span>
+      <span class="user-info">欢迎，{{ userInfo.nickname || userInfo.username || userInfo.name || '用户' }}</span>
       <el-button type="text" @click="handleLogout" class="logout-btn">退出</el-button>
     </div>
   </div>
@@ -13,14 +13,10 @@
 <script>
 export default {
   name: 'Navbar',
-  data() {
-    return {
-      userInfo: {}
+  computed: {
+    userInfo() {
+      return this.$store.state.user.userInfo || {}
     }
-  },
-  created() {
-    // 从store中获取用户信息
-    this.userInfo = this.$store.state.user.userInfo
   },
   methods: {
     handleLogout() {

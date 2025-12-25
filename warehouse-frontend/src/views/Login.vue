@@ -58,15 +58,40 @@ export default {
         try {
           // 调用修正后的登录接口（直接传表单数据）
           const res = await userLogin(this.loginForm)
+          
+          console.log('登录响应:', res) // 添加调试信息
+          
+          // 检查响应结构，尝试多种可能的结构
+          let loginResponse;
+          
+          // 检查是否是 { data: {...} } 结构
+          if (res && res.data) {
+            loginResponse = res.data;
+          } 
+          // 检查是否是直接返回数据结构
+          else if (res && res.token) {
+            loginResponse = res;
+          }
+          
+          // 如果仍然没有找到有效数据，抛出错误
+          if (!loginResponse) {
+            throw new Error('登录响应数据格式错误');
+          }
+          
           // 保存 Token 和用户信息到 Vuex
           this.$store.commit('user/setLoginInfo', {
-            token: res.token,
-            userInfo: res.userInfo
+            token: loginResponse.token,
+            userInfo: {
+              id: loginResponse.userId,
+              nickname: loginResponse.nickname,
+              role: loginResponse.role
+            }
           })
           this.$message.success('登录成功')
           this.$router.push('/')
         } catch (err) {
           console.error('登录失败：', err)
+          this.$message.error('登录失败，请检查账号密码')
         }
       })
     }
