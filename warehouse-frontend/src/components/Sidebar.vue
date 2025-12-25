@@ -19,7 +19,7 @@
         <span slot="title">仓库管理</span>
       </el-menu-item>
       
-      <el-menu-item index="/inout/record">
+      <el-menu-item index="/inoutrecord">
         <i class="el-icon-tickets"></i>
         <span slot="title">出入库记录</span>
       </el-menu-item>

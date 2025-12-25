@@ -5,7 +5,7 @@ import router from '@/router'
 
 // 创建 axios 实例
 const request = axios.create({
-  baseURL: 'http://localhost:8080/api', // 后端接口基础路径（可根据你的实际地址修改）
+  baseURL: 'http://localhost:8080', // 后端接口基础路径（移除/api，因为后端Controller已包含/api前缀）
   timeout: 5000
 })
 

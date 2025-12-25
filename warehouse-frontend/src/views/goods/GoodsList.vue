@@ -80,7 +80,7 @@
 import { getGoodsList } from '@/api/goods'
 
 export default {
-  name: 'GoodsList',
+  name: 'GoodsListPage',
   data() {
     return {
       goodsList: [],
@@ -109,39 +109,17 @@ export default {
         }
         const res = await getGoodsList(params)
         
-        console.log('API Response:', res) // 添加调试信息
-        
-        // 检查API响应结构
-        if (res && typeof res === 'object') {
-          // 检查可能的字段
-          console.log('res.data:', res.data)
-          console.log('res.records:', res.records)
-          console.log('res.total:', res.total)
-          
-          let records = []
-          let total = 0
-          
-          // 检查响应是否为标准格式（包含data字段）
-          if (res.data && typeof res.data === 'object') {
-            records = Array.isArray(res.data.records) ? res.data.records : (Array.isArray(res.data.data) ? res.data.data : [])
-            total = typeof res.data.total === 'number' ? res.data.total : (typeof res.data.total !== 'undefined' ? parseInt(res.data.total) : 0)
-          } else if (Array.isArray(res.data)) {
-            // 如果data直接是数组
-            records = res.data
-            total = records.length
-          } else {
-            // 如果直接是数据，尝试直接获取
-            records = Array.isArray(res.records) ? res.records : []
-            total = typeof res.total === 'number' ? res.total : (typeof res.total !== 'undefined' ? parseInt(res.total) : 0)
-          }
-          
-          console.log('Processed records:', records)
-          console.log('Processed total:', total)
-          
-          this.goodsList = records
-          this.pagination.total = total
+        // 根据API响应结构调整数据获取方式
+        if (res && res.data) {
+          // 标准分页响应格式：{ data: { records: [], total: 0 } }
+          this.goodsList = res.data.records || []
+          this.pagination.total = res.data.total || 0
+        } else if (res && res.records) {
+          // 兼容直接返回分页数据格式：{ records: [], total: 0 }
+          this.goodsList = res.records || []
+          this.pagination.total = res.total || 0
         } else {
-          console.error('Unexpected API response format:', res)
+          // 其他情况，初始化为空数组
           this.goodsList = []
           this.pagination.total = 0
         }

@@ -2,40 +2,27 @@
 import request from '@/utils/request'
 
 /**
- * 获取商品列表
+ * 分页查询商品列表
  * @param {Object} params 查询参数（pageNum, pageSize, goodsName）
  * @returns Promise
  */
 export function getGoodsList(params) {
   return request({
-    url: '/goods/page',
+    url: '/api/goods/page',
     method: 'get',
     params
   })
 }
 
 /**
- * 根据ID获取商品详情
+ * 根据ID查询商品详情
  * @param {String} id 商品ID
  * @returns Promise
  */
 export function getGoodsById(id) {
   return request({
-    url: `/goods/${id}`,
+    url: `/api/goods/${id}`,
     method: 'get'
-  })
-}
-
-/**
- * 新增商品
- * @param {Object} data 商品数据
- * @returns Promise
- */
-export function addGoods(data) {
-  return request({
-    url: '/goods/add',
-    method: 'post',
-    data
   })
 }
 
@@ -46,7 +33,7 @@ export function addGoods(data) {
  */
 export function updateGoods(data) {
   return request({
-    url: '/goods/update',
+    url: '/api/goods/update',
     method: 'put',
     data
   })
@@ -59,7 +46,46 @@ export function updateGoods(data) {
  */
 export function deleteGoods(id) {
   return request({
-    url: `/goods/${id}`,
+    url: `/api/goods/${id}`,
     method: 'delete'
+  })
+}
+
+/**
+ * 批量删除商品
+ * @param {Array} ids 商品ID数组
+ * @returns Promise
+ */
+export function batchDeleteGoods(ids) {
+  return request({
+    url: '/api/goods/batch',
+    method: 'delete',
+    data: ids
+  })
+}
+
+/**
+ * 根据商品名称模糊查询
+ * @param {String} goodsName 商品名称
+ * @returns Promise
+ */
+export function getGoodsByName(goodsName) {
+  return request({
+    url: '/api/goods/name',
+    method: 'get',
+    params: { goodsName }
+  })
+}
+
+/**
+ * 上传商品图片
+ * @param {FormData} data 包含图片文件的表单数据
+ * @returns Promise
+ */
+export function uploadGoodsImg(data) {
+  return request({
+    url: '/api/goods/upload',
+    method: 'post',
+    data
   })
 }

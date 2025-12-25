@@ -8,7 +8,7 @@ import request from '@/utils/request'
  */
 export function getWarehouseList(params) {
   return request({
-    url: '/warehouse/page',
+    url: '/api/warehouse/page',
     method: 'get',
     params
   })
