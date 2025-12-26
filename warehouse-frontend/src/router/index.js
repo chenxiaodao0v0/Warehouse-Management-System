@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import Login from '@/views/Login.vue' // 导入登录页面
+import Dashboard from '@/views/Dashboard.vue' // 导入Dashboard组件
 
 Vue.use(VueRouter)
 
@@ -14,12 +15,19 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    redirect: '/goods/list' 
+    redirect: '/dashboard' // 重定向到dashboard
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: HomeView
+    component: HomeView, // 使用HomeView作为父组件
+    children: [
+      {
+        path: '',
+        name: 'DashboardPage',
+        component: Dashboard // Dashboard作为子组件
+      }
+    ]
   },
   {
     path: '/goods/list',
