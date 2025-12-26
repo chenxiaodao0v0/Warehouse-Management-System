@@ -21,12 +21,13 @@ public class XmutWarehouse {
     // 仓库基础信息字段
     private String name; // 仓库名称
     private String address; // 仓库地址
-    private String contact; // 联系人
+    @TableField("manager")  // 数据库中实际字段名为manager
+    private String contact; // 联系人（负责人）
     private String phone; // 联系电话
-    private Integer status; // 仓库状态（1-启用，2-禁用）
-    private String remark; // 仓库备注
+    private Integer status; // 仓库状态（0-禁用，1-启用）
+    @TableField("enterprise_id")  // 企业ID
+    private String enterpriseId; // 关联企业ID
     @TableField("create_time")
     private Date createTime; // 创建时间
-    @TableField("update_time")
-    private Date updateTime; // 更新时间
+    // 注意：xmut_warehouse表中没有update_time字段，所以不包含该属性
 }
