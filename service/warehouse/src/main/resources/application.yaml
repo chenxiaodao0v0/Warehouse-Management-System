@@ -10,7 +10,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/xmut_warehouse?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password:
+    password: ''  # 设置为空字符串而不是留空
     driver-class-name: com.mysql.cj.jdbc.Driver
   # Redis配置（加分项，若未安装Redis，可注释）
   #  redis:

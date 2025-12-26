@@ -64,3 +64,30 @@
     </el-menu>
   </div>
 </template>
+
+<script>
+export default {
+  name: 'Sidebar',
+  computed: {
+    // 计算当前活跃的菜单项，基于当前路由
+    activeMenu() {
+      const { meta, path } = this.$route
+      // 如果路由有指定的activeMenu，则使用它，否则使用路由路径
+      if (meta.activeMenu) {
+        return meta.activeMenu
+      }
+      return path
+    }
+  }
+}
+</script>
+
+<style scoped>
+.sidebar-container {
+  height: 100%;
+  overflow-y: auto;
+}
+.sidebar-menu:not(.el-menu--collapse) {
+  width: 200px;
+}
+</style>

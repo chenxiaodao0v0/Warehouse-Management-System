@@ -116,6 +116,8 @@
 
 <script>
 import * as echarts from 'echarts'
+import { getStatistics, getTrendData, getWarehouseDistribution } from '@/api/statistics'
+import { getInOutRecordList } from '@/api/inOutRecord'
 
 export default {
   name: 'Dashboard',
@@ -126,7 +128,7 @@ export default {
         goodsCount: 0,
         warehouseCount: 0,
         inOutRecordCount: 0,
-        enterpriseCount: 1 // 企业信息一般只有一个
+        enterpriseCount: 0
       },
       recentRecords: [],
       chartData: {
@@ -141,13 +143,12 @@ export default {
     }
   },
   mounted() {
+    console.log('Dashboard mounted')
     this.getCurrentDate()
     this.loadStats()
     this.loadRecentRecords()
     this.loadChartData()
-    this.$nextTick(() => {
-      this.renderCharts()
-    })
+    // 移除这里的 renderCharts 调用，改由 loadChartData 完成后触发
   },
   methods: {
     getCurrentDate() {
@@ -158,132 +159,205 @@ export default {
       this.currentDate = `${year}-${month}-${day}`
     },
     async loadStats() {
-      // 这里应该调用实际的API获取统计数据
-      // 暂时使用模拟数据
-      this.stats = {
-        goodsCount: 128,
-        warehouseCount: 5,
-        inOutRecordCount: 326,
-        enterpriseCount: 1
+      try {
+        console.log('Loading stats...')
+        const res = await getStatistics()
+        console.log('Full stats response:', res)
+        
+        // 确保响应格式正确
+        if (res && (res.code === 200 || res.code === 0 || (res.goodsCount !== undefined))) {
+          // 检查数据结构，兼容不同的响应格式
+          let statsData = res.data
+          if (res.data && res.data.goodsCount !== undefined) {
+            // 如果数据在res.data下
+            statsData = res.data
+          } else if (res.goodsCount !== undefined) {
+            // 如果数据直接在res下（已被拦截器处理）
+            statsData = res
+          }
+          
+          console.log('Processing stats data:', statsData)
+          
+          this.stats = {
+            goodsCount: statsData.goodsCount || 0,
+            warehouseCount: statsData.warehouseCount || 0,
+            inOutRecordCount: statsData.inOutRecordCount || 0,
+            enterpriseCount: statsData.enterpriseCount || 0
+          }
+          console.log('Updated stats in component:', this.stats)
+        } else {
+          console.error('获取统计数据失败:', res ? (res.msg || res.message) : '响应为空')
+          this.$message.error(res ? (res.msg || res.message || '获取统计数据失败') : '获取统计数据失败')
+        }
+      } catch (error) {
+        console.error('获取统计数据失败 (catch):', error)
+        this.$message.error('获取统计数据失败')
       }
     },
+    
     async loadRecentRecords() {
-      // 这里应该调用API获取最近的出入库记录
-      // 暂时使用模拟数据
-      this.recentRecords = [
-        { id: 'R100001', goodsId: 'G1001', warehouseId: 'W001', type: 1, quantity: 50, contactPerson: '张三', operateTime: '2025-12-20T09:03:50.000+00:00' },
-        { id: 'R100002', goodsId: 'G1002', warehouseId: 'W002', type: 2, quantity: 20, contactPerson: '李四', operateTime: '2025-12-21T10:15:30.000+00:00' },
-        { id: 'R100003', goodsId: 'G1003', warehouseId: 'W001', type: 3, quantity: 30, contactPerson: '王五', operateTime: '2025-12-22T14:20:45.000+00:00' },
-        { id: 'R100004', goodsId: 'G1004', warehouseId: 'W003', type: 1, quantity: 80, contactPerson: '赵六', operateTime: '2025-12-23T11:30:12.000+00:00' },
-        { id: 'R100005', goodsId: 'G1005', warehouseId: 'W002', type: 2, quantity: 15, contactPerson: '钱七', operateTime: '2025-12-24T16:45:28.000+00:00' }
-      ]
+      try {
+        console.log('Loading recent records...')
+        const params = {
+          pageNum: 1,
+          pageSize: 5
+        }
+        const res = await getInOutRecordList(params)
+        console.log('Recent records response:', res)
+        // 检查响应是否成功，兼容不同格式
+        if (res && (res.code === 200 || res.code === 0 || res.records)) {
+          // 尝试从不同可能的位置获取数据
+          this.recentRecords = res.data?.records || res.records || []
+          console.log('Updated recent records:', this.recentRecords)
+        } else {
+          console.error('获取最新记录失败:', res?.msg || res?.message || '响应格式不正确')
+          this.$message.error(res?.msg || res?.message || '获取最新记录失败')
+        }
+      } catch (error) {
+        console.error('获取最新记录失败 (catch):', error)
+        this.$message.error('获取最新记录失败')
+      }
     },
+    
     async loadChartData() {
-      // 模拟图表数据
-      const dates = []
-      const inData = []
-      const outData = []
-      const transferData = []
-      
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        dates.push(`${date.getMonth()+1}-${date.getDate()}`)
-        inData.push(Math.floor(Math.random() * 20) + 5)
-        outData.push(Math.floor(Math.random() * 15) + 3)
-        transferData.push(Math.floor(Math.random() * 10) + 2)
+      try {
+        console.log('Loading chart data...')
+        // 获取趋势数据
+        const trendParams = {
+          days: 7
+        }
+        const trendRes = await getTrendData(trendParams)
+        console.log('Trend data response:', trendRes)
+        if (trendRes && (trendRes.code === 200 || trendRes.code === 0 || trendRes.dates)) {
+          const trendData = trendRes.data || trendRes
+          this.chartData.trendData = {
+            dates: trendData.dates || [],
+            inData: trendData.inData || [],
+            outData: trendData.outData || [],
+            transferData: trendData.transferData || []
+          }
+          console.log('Updated trend data:', this.chartData.trendData)
+        } else {
+          console.error('获取趋势数据失败:', trendRes?.msg || trendRes?.message || '响应格式不正确')
+          this.$message.error(trendRes?.msg || trendRes?.message || '获取趋势数据失败')
+        }
+
+        // 获取仓库分布数据
+        const warehouseRes = await getWarehouseDistribution()
+        console.log('Warehouse distribution response:', warehouseRes)
+        if (warehouseRes && (warehouseRes.code === 200 || warehouseRes.code === 0 || warehouseRes.warehouseData)) {
+          // 尝试从不同位置获取数据
+          this.chartData.warehouseData = warehouseRes.data?.warehouseData || 
+                                         warehouseRes.warehouseData || 
+                                         warehouseRes.data || []
+          console.log('Updated warehouse data:', this.chartData.warehouseData)
+        } else {
+          console.error('获取仓库分布数据失败:', warehouseRes?.msg || warehouseRes?.message || '响应格式不正确')
+          this.$message.error(warehouseRes?.msg || warehouseRes?.message || '获取仓库分布数据失败')
+        }
+
+        // 数据加载完成后，在下一个DOM更新周期重新渲染图表
+        this.$nextTick(() => {
+          this.renderCharts()
+        })
+      } catch (error) {
+        console.error('获取图表数据失败 (catch):', error)
+        this.$message.error('获取图表数据失败')
       }
-      
-      this.chartData.trendData = {
-        dates,
-        inData,
-        outData,
-        transferData
-      }
-      
-      // 仓库分布数据
-      this.chartData.warehouseData = [
-        { name: '仓库A', value: 120 },
-        { name: '仓库B', value: 85 },
-        { name: '仓库C', value: 95 },
-        { name: '仓库D', value: 70 },
-        { name: '仓库E', value: 60 }
-      ]
     },
     renderCharts() {
+      console.log('Rendering charts with data:', this.chartData)
+      
       // 渲染趋势图
-      const trendChart = echarts.init(document.getElementById('trendChart'))
-      const trendOption = {
-        tooltip: {
-          trigger: 'axis'
-        },
-        legend: {
-          data: ['入库', '出库', '调货']
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          boundaryGap: false,
-          data: this.chartData.trendData.dates
-        },
-        yAxis: {
-          type: 'value'
-        },
-        series: [
-          {
-            name: '入库',
-            type: 'line',
-            data: this.chartData.trendData.inData,
-            itemStyle: { color: '#67C23A' }
+      if (this.chartData.trendData.dates && this.chartData.trendData.dates.length > 0) {
+        const trendChart = echarts.init(document.getElementById('trendChart'))
+        const trendOption = {
+          tooltip: {
+            trigger: 'axis'
           },
-          {
-            name: '出库',
-            type: 'line',
-            data: this.chartData.trendData.outData,
-            itemStyle: { color: '#F56C6C' }
+          legend: {
+            data: ['入库', '出库', '调货']
           },
-          {
-            name: '调货',
-            type: 'line',
-            data: this.chartData.trendData.transferData,
-            itemStyle: { color: '#E6A23C' }
-          }
-        ]
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: this.chartData.trendData.dates
+          },
+          yAxis: {
+            type: 'value'
+          },
+          series: [
+            {
+              name: '入库',
+              type: 'line',
+              data: this.chartData.trendData.inData,
+              itemStyle: { color: '#67C23A' },
+              // 添加标记点，使数据点更明显
+              symbolSize: 6,
+              smooth: true
+            },
+            {
+              name: '出库',
+              type: 'line',
+              data: this.chartData.trendData.outData,
+              itemStyle: { color: '#F56C6C' },
+              symbolSize: 6,
+              smooth: true
+            },
+            {
+              name: '调货',
+              type: 'line',
+              data: this.chartData.trendData.transferData,
+              itemStyle: { color: '#E6A23C' },
+              symbolSize: 6,
+              smooth: true
+            }
+          ]
+        }
+        trendChart.setOption(trendOption)
+      } else {
+        console.log('趋势数据为空，无法渲染趋势图')
       }
-      trendChart.setOption(trendOption)
 
       // 渲染仓库分布图
-      const warehouseChart = echarts.init(document.getElementById('warehouseChart'))
-      const warehouseOption = {
-        tooltip: {
-          trigger: 'item'
-        },
-        legend: {
-          orient: 'vertical',
-          left: 'left'
-        },
-        series: [
-          {
-            name: '仓库库存',
-            type: 'pie',
-            radius: '50%',
-            data: this.chartData.warehouseData,
-            emphasis: {
-              itemStyle: {
-                shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
+      if (this.chartData.warehouseData && this.chartData.warehouseData.length > 0) {
+        const warehouseChart = echarts.init(document.getElementById('warehouseChart'))
+        const warehouseOption = {
+          tooltip: {
+            trigger: 'item',
+            formatter: "{a} <br/>{b}: {c} ({d}%)"
+          },
+          legend: {
+            orient: 'vertical',
+            left: 'left'
+          },
+          series: [
+            {
+              name: '仓库库存',
+              type: 'pie',
+              radius: ['40%', '70%'], // 环形图效果
+              avoidLabelOverlap: false,
+              data: this.chartData.warehouseData,
+              emphasis: {
+                itemStyle: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
               }
             }
-          }
-        ]
+          ]
+        }
+        warehouseChart.setOption(warehouseOption)
+      } else {
+        console.log('仓库分布数据为空，无法渲染仓库分布图')
       }
-      warehouseChart.setOption(warehouseOption)
     },
     formatDate(dateStr) {
       if (!dateStr) return ''

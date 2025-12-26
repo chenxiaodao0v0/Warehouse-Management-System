@@ -116,4 +116,16 @@ public class InOutRecordController {
     public R<List<InOutRecord>> getRecordByGoodsId(@PathVariable String goodsId) {
         return inOutRecordService.getRecordByGoodsId(goodsId);
     }
+
+    /**
+     * 获取最近的出入库记录
+     * 接口：GET /api/inout/recent?pageNum=1&pageSize=5
+     */
+    @GetMapping("/recent")
+    public R<IPage<InOutRecord>> getRecentInOutRecords(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "5") Integer pageSize) {
+        Page<InOutRecord> page = new Page<>(pageNum, pageSize);
+        return inOutRecordService.getRecentInOutRecords(page);
+    }
 }

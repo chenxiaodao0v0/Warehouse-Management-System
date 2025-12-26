@@ -267,14 +267,18 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
 
     @Override
     public R<List<InOutRecord>> getRecordByGoodsId(String goodsId) {
-        // 参数校验
-        if (!StringUtils.hasText(goodsId)) {
-            return R.fail("商品ID不能为空");
-        }
-        LambdaQueryWrapper<InOutRecord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(InOutRecord::getGoodsId, goodsId)
-                .orderByDesc(InOutRecord::getOperateTime); // 倒序排列
-        List<InOutRecord> recordList = this.list(wrapper);
-        return R.success(recordList);
+        LambdaQueryWrapper<InOutRecord> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(InOutRecord::getGoodsId, goodsId)
+                .orderByDesc(InOutRecord::getOperateTime); // 按操作时间倒序，最新的在前
+        List<InOutRecord> records = this.baseMapper.selectList(queryWrapper);
+        return R.success(records);
+    }
+
+    @Override
+    public R<IPage<InOutRecord>> getRecentInOutRecords(Page<InOutRecord> page) {
+        LambdaQueryWrapper<InOutRecord> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.orderByDesc(InOutRecord::getOperateTime); // 按操作时间倒序，最新的在前
+        IPage<InOutRecord> recordIPage = this.baseMapper.selectPage(page, queryWrapper);
+        return R.success(recordIPage);
     }
 }

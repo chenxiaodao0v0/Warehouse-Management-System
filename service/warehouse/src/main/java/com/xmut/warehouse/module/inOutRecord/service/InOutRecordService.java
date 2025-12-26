@@ -37,4 +37,9 @@ public interface InOutRecordService extends IService<InOutRecord> {
      * 按商品ID查询所有出入库/调货记录（查该商品全生命周期流水）
      */
     R<List<InOutRecord>> getRecordByGoodsId(String goodsId);
+    
+    /**
+     * 获取最近的出入库记录
+     */
+    R<IPage<InOutRecord>> getRecentInOutRecords(Page<InOutRecord> page);
 }
