@@ -312,12 +312,65 @@ export default {
         type: 'warning'
       }).then(async () => {
         try {
-          // 这里应该调用删除API
-          this.$message.success('删除成功')
-          this.fetchWarehouseList()
+          // 调用删除API
+          const response = await this.$http.delete(`/api/warehouse/${id}`)
+          
+          console.log('删除响应对象:', response) // 查看完整的响应对象
+          console.log('删除响应数据:', response.data) // 查看响应数据部分
+          
+          // 检查响应结构
+          // 情况1: 响应是完整的响应体对象
+          if (response && typeof response === 'object' && response.code) {
+            if (response.code === 200) {
+              this.$message.success(response.msg || response.data || '删除成功')
+              this.fetchWarehouseList() // 刷新列表
+            } else {
+              this.$message.error(response.msg || '删除失败')
+            }
+          } 
+          // 情况2: 响应是字符串或数字（表示成功）
+          else if (typeof response === 'string' || typeof response === 'number') {
+            // 假设字符串或数字表示成功
+            this.$message.success('删除成功')
+            this.fetchWarehouseList() // 刷新列表
+          } 
+          // 情况3: 响应是包装过的，需要检查response.data
+          else if (response && response.data && response.data.code) {
+            if (response.data.code === 200) {
+              this.$message.success(response.data.msg || response.data.data || '删除成功')
+              this.fetchWarehouseList() // 刷新列表
+            } else {
+              this.$message.error(response.data.msg || '删除失败')
+            }
+          } 
+          // 情况4: 响应为null或空值，但请求成功（204 No Content等情况）
+          else if (response === null || response === undefined) {
+            this.$message.success('删除成功')
+            this.fetchWarehouseList() // 刷新列表
+          }
+          else {
+            this.$message.error('删除失败：响应数据格式错误')
+          }
         } catch (error) {
-          this.$message.error('删除失败')
+          console.error('删除仓库失败：', error)
+          // 检查错误响应结构
+          if (error.response) {
+            if (error.response.data && error.response.data.msg) {
+              this.$message.error('删除失败：' + error.response.data.msg)
+            } else if (error.response.data && error.response.data.message) {
+              this.$message.error('删除失败：' + error.response.data.message)
+            } else {
+              this.$message.error('删除失败：' + error.response.statusText)
+            }
+          } else if (error.request) {
+            this.$message.error('网络错误，无法连接到服务器')
+          } else {
+            this.$message.error('删除失败：' + error.message)
+          }
         }
+      }).catch(() => {
+        // 用户取消删除，不执行任何操作
+        this.$message.info('已取消删除')
       })
     },
     handleSizeChange(val) {
