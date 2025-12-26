@@ -3,6 +3,7 @@
     <el-card class="inout-card">
       <div slot="header" class="clearfix">
         <span>出入库记录</span>
+        <el-button style="float: right; padding: 3px 0" type="text" @click="handleRefresh">刷新</el-button>
       </div>
       
       <!-- 搜索区域 -->
@@ -21,27 +22,36 @@
         :data="recordList" 
         v-loading="loading"
         style="width: 100%; margin-top: 20px;">
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
-        <el-table-column prop="goodsId" label="商品ID" width="100"></el-table-column>
-        <el-table-column prop="warehouseId" label="仓库ID" width="100"></el-table-column>
+        <el-table-column prop="id" label="ID" width="120">
+          <template slot-scope="scope">
+            {{ formatId(scope.row.id) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="goodsId" label="商品ID" width="120">
+          <template slot-scope="scope">
+            {{ formatId(scope.row.goodsId) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="warehouseId" label="仓库ID" width="120">
+          <template slot-scope="scope">
+            {{ formatId(scope.row.warehouseId) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="type" label="类型" width="100">
           <template slot-scope="scope">
-            <el-tag :type="scope.row.type === 'in' ? 'success' : scope.row.type === 'out' ? 'danger' : 'warning'">
-              {{ scope.row.type === 'in' ? '入库' : scope.row.type === 'out' ? '出库' : '调货' }}
+            <el-tag :type="scope.row.type === 1 ? 'success' : scope.row.type === 2 ? 'danger' : 'warning'">
+              {{ scope.row.type === 1 ? '入库' : scope.row.type === 2 ? '出库' : '调货' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="quantity" label="数量" width="80"></el-table-column>
         <el-table-column prop="contactPerson" label="联系人" width="100"></el-table-column>
-        <el-table-column prop="phone" label="联系电话" width="120"></el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="contactPhone" label="联系电话" width="120"></el-table-column>
+        <el-table-column prop="operateTime" label="操作时间" width="180">
           <template slot-scope="scope">
-            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-              {{ scope.row.status === 1 ? '成功' : '失败' }}
-            </el-tag>
+            {{ formatDate(scope.row.operateTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
         <el-table-column label="操作" width="150">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleView(scope.row)">查看</el-button>
@@ -66,6 +76,8 @@
 </template>
 
 <script>
+import { getInOutRecordList } from '@/api/inOutRecord'
+
 export default {
   name: 'InOutRecord',
   data() {
@@ -94,35 +106,22 @@ export default {
           pageSize: this.pagination.pageSize,
           contactPerson: this.searchForm.contactPerson
         }
-        // 这里应该调用获取出入库记录的API
-        // const res = await getInOutRecordList(params)
-        this.$message.info('出入库记录功能待实现')
-        // 临时使用模拟数据
-        this.recordList = [
-          {
-            id: '1',
-            goodsId: 'G001',
-            warehouseId: 'W001',
-            type: 'in',
-            quantity: 100,
-            contactPerson: '张三',
-            phone: '13800138000',
-            status: 1,
-            createTime: '2025-12-25 10:30:00'
-          },
-          {
-            id: '2',
-            goodsId: 'G002',
-            warehouseId: 'W002',
-            type: 'out',
-            quantity: 50,
-            contactPerson: '李四',
-            phone: '13900139000',
-            status: 1,
-            createTime: '2025-12-25 11:30:00'
-          }
-        ]
-        this.pagination.total = this.recordList.length
+        const res = await getInOutRecordList(params)
+        
+        // 检查响应结构，兼容不同格式
+        if (res && res.data && res.data.records !== undefined) {
+          // 标准分页响应格式：{ data: { records: [], total: 0 } }
+          this.recordList = res.data.records || []
+          this.pagination.total = res.data.total || 0
+        } else if (res && res.records !== undefined) {
+          // 兼容直接返回分页数据格式：{ records: [], total: 0 }
+          this.recordList = res.records || []
+          this.pagination.total = res.total || 0
+        } else {
+          // 其他情况，初始化为空数组
+          this.recordList = []
+          this.pagination.total = 0
+        }
       } catch (error) {
         console.error('获取出入库记录失败：', error)
         this.$message.error('获取出入库记录失败')
@@ -132,6 +131,9 @@ export default {
     },
     handleSearch() {
       this.pagination.pageNum = 1
+      this.fetchRecordList()
+    },
+    handleRefresh() {
       this.fetchRecordList()
     },
     handleAdd() {
@@ -147,6 +149,33 @@ export default {
     handleCurrentChange(val) {
       this.pagination.pageNum = val
       this.fetchRecordList()
+    },
+    // 格式化ID显示，截取UUID的后8位
+    formatId(id) {
+      if (!id) return ''
+      // 如果是UUID格式，截取后8位，否则返回原ID
+      if (id.length > 8) {
+        return '...' + id.slice(-8)
+      }
+      return id
+    },
+    // 格式化日期
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) {
+        return ''
+      }
+      
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
     }
   }
 }

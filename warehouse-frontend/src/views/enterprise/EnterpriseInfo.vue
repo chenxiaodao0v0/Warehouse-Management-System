@@ -102,10 +102,20 @@ export default {
     async fetchEnterpriseInfo() {
       try {
         const res = await getEnterpriseInfo()
+        console.log('企业信息响应:', res) // 添加调试信息
+        
+        // 检查响应结构是否为标准格式
         if (res && res.code === 200 && res.data) {
+          // 标准响应格式：{code: 200, data: {企业信息}}
           this.enterpriseInfo = res.data
+        } else if (res && res.id) {
+          // 直接返回企业对象格式：{id: ..., name: ..., ...}
+          this.enterpriseInfo = res
+        } else if (res && res.code !== 200) {
+          // 响应code不是200，说明后端返回了错误信息
+          this.$message.error('获取企业信息失败：' + (res.msg || '未知错误'))
         } else {
-          this.$message.error('获取企业信息失败')
+          this.$message.error('获取企业信息失败：响应格式错误')
         }
       } catch (error) {
         console.error('获取企业信息失败：', error)

@@ -14,9 +14,9 @@ import java.util.Date;
 @TableName("xmut_in_out_record") // 对应你的表名
 public class InOutRecord {
     /**
-     * UUID主键
+     * 主键ID，自定义生成策略
      */
-    @TableId(type = IdType.ASSIGN_UUID)
+    @TableId(type = IdType.INPUT)
     private String id;
 
     /**

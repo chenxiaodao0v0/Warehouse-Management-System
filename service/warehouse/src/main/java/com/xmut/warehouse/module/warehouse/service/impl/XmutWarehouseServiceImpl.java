@@ -37,7 +37,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         LambdaQueryWrapper<XmutWarehouse> queryWrapper = new LambdaQueryWrapper<>();
         // 仓库名称模糊查询
         if (StringUtils.hasText(warehouseName)) {
-            queryWrapper.like(XmutWarehouse::getWarehouseName, warehouseName);
+            queryWrapper.like(XmutWarehouse::getName, warehouseName);
         }
 
         // 分页查询（MyBatis-Plus自带，你的项目已配置分页插件，无需额外处理）
@@ -64,12 +64,12 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         if (!StringUtils.hasText(warehouse.getEnterpriseId())) {
             return R.fail("企业ID不能为空");
         }
-        if (!StringUtils.hasText(warehouse.getWarehouseName())) {
+        if (!StringUtils.hasText(warehouse.getName())) {
             return R.fail("仓库名称不能为空");
         }
         // 校验仓库名称在该企业下是否唯一（避免重复）
         LambdaQueryWrapper<XmutWarehouse> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(XmutWarehouse::getWarehouseName, warehouse.getWarehouseName());
+        queryWrapper.eq(XmutWarehouse::getName, warehouse.getName());
         long count = this.baseMapper.selectCount(queryWrapper);
         if (count > 0) {
             return R.fail("该企业下已存在同名仓库，请勿重复添加");
@@ -93,7 +93,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         if (!StringUtils.hasText(warehouse.getEnterpriseId())) {
             return R.fail("企业ID不能为空");
         }
-        if (!StringUtils.hasText(warehouse.getWarehouseName())) {
+        if (!StringUtils.hasText(warehouse.getName())) {
             return R.fail("仓库名称不能为空");
         }
         // 校验仓库是否存在
@@ -103,7 +103,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         }
         // 校验仓库名称唯一性（排除当前仓库ID）
         LambdaQueryWrapper<XmutWarehouse> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(XmutWarehouse::getWarehouseName, warehouse.getWarehouseName())
+        queryWrapper.eq(XmutWarehouse::getName, warehouse.getName())
                 .ne(XmutWarehouse::getId, warehouse.getId());
         long count = this.baseMapper.selectCount(queryWrapper);
         if (count > 0) {
@@ -150,7 +150,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
                     .eq(com.xmut.warehouse.module.goods.entity.XmutGoods::getId, id));
             if (goodsCount > 0) {
                 XmutWarehouse warehouse = this.baseMapper.selectById(id);
-                return R.fail("仓库【" + warehouse.getWarehouseName() + "】已关联" + goodsCount + "个货品，无法批量删除");
+                return R.fail("仓库【" + warehouse.getName() + "】已关联" + goodsCount + "个货品，无法批量删除");
             }
         }
         // 批量删除仓库（MyBatis-Plus自带removeByIds方法）

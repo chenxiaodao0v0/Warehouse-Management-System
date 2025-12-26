@@ -34,6 +34,9 @@ spring:
 mybatis-plus:
   mapper-locations: classpath:mapper/xml/*.xml  # XML映射文件路径
   type-aliases-package: com.xmut.warehouse.module.*.entity  # 实体类别名包
+  global-config:
+    db-config:
+      id-type: assign_id  # 使用自定义ID生成策略
   configuration:
     map-underscore-to-camel-case: true  # 下划线转驼峰（如create_time → createTime）
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 控制台打印SQL
