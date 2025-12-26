@@ -45,9 +45,4 @@ public class InOutRecord {
     
     @TableField("operator_id")
     private String operatorId; // 操作人ID（关联用户表）
-    
-    @TableField("create_time")
-    private Date createTime; // 创建时间
-    @TableField("update_time")
-    private Date updateTime; // 更新时间
 }

@@ -24,4 +24,10 @@ public class XmutEnterpriseController {
     public R<?> update(@RequestBody XmutEnterprise enterprise) {
         return enterpriseService.updateEnterprise(enterprise);
     }
+    
+    // 初始化企业信息
+    @PostMapping("/init")
+    public R<?> init(@RequestBody XmutEnterprise enterprise) {
+        return enterpriseService.initEnterpriseIfNotExists(enterprise);
+    }
 }

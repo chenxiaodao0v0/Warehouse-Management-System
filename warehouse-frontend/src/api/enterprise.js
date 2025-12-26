@@ -17,6 +17,15 @@ export function updateEnterprise(data) {
   })
 }
 
+// 初始化企业信息
+export function initEnterprise(data) {
+  return request({
+    url: '/api/enterprise/init', // 初始化企业信息的API
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取企业列表
 export function getEnterpriseList() {
   return request({
