@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xmut.warehouse.common.generator.IdGenerator;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.common.util.PhoneValidator;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
@@ -75,11 +76,16 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail("该商品不存在，无法入库");
         }
 
-        // 3. 强制设置入库类型+操作时间（不变）
+        // 3. 手动设置ID
+        if (!StringUtils.hasText(inOutRecord.getId())) {
+            inOutRecord.setId(IdGenerator.nextRecordId());
+        }
+
+        // 4. 强制设置入库类型+操作时间（不变）
         inOutRecord.setType(1);
         inOutRecord.setOperateTime(new Date());
 
-        // 4. 核心修改：调用WarehouseGoodsService更新库存（入库：changeNum=+quantity）
+        // 5. 核心修改：调用WarehouseGoodsService更新库存（入库：changeNum=+quantity）
         R<?> stockResult = warehouseGoodsService.updateStock(
                 inOutRecord.getGoodsId(),
                 inOutRecord.getWarehouseId(),
@@ -89,7 +95,7 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail(stockResult.getCode(), stockResult.getMsg());
         }
 
-        // 5. 新增入库记录（不变）
+        // 6. 新增入库记录（不变）
         boolean saveSuccess = this.save(inOutRecord);
         if (!saveSuccess) {
             // 库存已更新，记录新增失败，事务回滚
@@ -132,11 +138,16 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail("该商品不存在，无法出库");
         }
 
-        // 3. 强制设置出库类型+操作时间（不变）
+        // 3. 手动设置ID
+        if (!StringUtils.hasText(inOutRecord.getId())) {
+            inOutRecord.setId(IdGenerator.nextRecordId());
+        }
+
+        // 4. 强制设置出库类型+操作时间（不变）
         inOutRecord.setType(2);
         inOutRecord.setOperateTime(new Date());
 
-        // 4. 核心修改：调用WarehouseGoodsService更新库存（出库：changeNum=-quantity）
+        // 5. 核心修改：调用WarehouseGoodsService更新库存（出库：changeNum=-quantity）
         R<?> stockResult = warehouseGoodsService.updateStock(
                 inOutRecord.getGoodsId(),
                 inOutRecord.getWarehouseId(),
@@ -146,7 +157,7 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail(stockResult.getCode(), stockResult.getMsg());
         }
 
-        // 5. 新增出库记录（不变）
+        // 6. 新增出库记录（不变）
         boolean saveSuccess = this.save(inOutRecord);
         if (!saveSuccess) {
             return R.fail("出库记录新增失败，库存操作回滚");
@@ -194,11 +205,16 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail("该商品不存在，无法调货");
         }
 
-        // 3. 强制设置调货类型+操作时间（不变）
+        // 3. 手动设置ID
+        if (!StringUtils.hasText(inOutRecord.getId())) {
+            inOutRecord.setId(IdGenerator.nextRecordId());
+        }
+
+        // 4. 强制设置调货类型+操作时间（不变）
         inOutRecord.setType(3);
         inOutRecord.setOperateTime(new Date());
 
-        // 4. 核心修改：原仓库减库存（-quantity）
+        // 5. 核心修改：原仓库减库存（-quantity）
         R<?> sourceStockResult = warehouseGoodsService.updateStock(
                 inOutRecord.getGoodsId(),
                 inOutRecord.getWarehouseId(),
@@ -208,7 +224,7 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail(sourceStockResult.getCode(), "原仓库库存操作失败：" + sourceStockResult.getMsg());
         }
 
-        // 5. 核心修改：目标仓库加库存（+quantity）
+        // 6. 核心修改：目标仓库加库存（+quantity）
         R<?> targetStockResult = warehouseGoodsService.updateStock(
                 inOutRecord.getGoodsId(),
                 inOutRecord.getRelatedWarehouseId(),
@@ -219,7 +235,7 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
             return R.fail(targetStockResult.getCode(), "目标仓库库存操作失败：" + targetStockResult.getMsg());
         }
 
-        // 6. 新增调货记录（不变）
+        // 7. 新增调货记录（不变）
         boolean saveSuccess = this.save(inOutRecord);
         if (!saveSuccess) {
             return R.fail("调货记录新增失败，库存操作回滚");

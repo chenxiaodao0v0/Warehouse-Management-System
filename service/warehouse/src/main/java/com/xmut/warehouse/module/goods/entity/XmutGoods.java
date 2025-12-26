@@ -13,8 +13,8 @@ import java.util.Date;
 @Data
 @TableName("xmut_goods")
 public class XmutGoods {
-    // 主键自动生成UUID，唯一标识商品
-    @TableId(type = IdType.ASSIGN_UUID)
+    // 主键需要手动输入
+    @TableId(type = IdType.INPUT)  // 使用手动输入ID生成策略
     private String id;
 
     // 商品基础信息字段（无冗余）

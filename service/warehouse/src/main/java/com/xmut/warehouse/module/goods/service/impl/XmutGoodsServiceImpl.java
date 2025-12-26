@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xmut.warehouse.common.generator.IdGenerator;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
 import com.xmut.warehouse.module.goods.mapper.XmutGoodsMapper;
@@ -52,6 +53,10 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
         }
         if (!StringUtils.hasText(xmutGoods.getCategoryId())) {
             return R.fail("商品类别ID不能为空");
+        }
+        // 手动设置ID
+        if (!StringUtils.hasText(xmutGoods.getId())) {
+            xmutGoods.setId(IdGenerator.nextGoodsId());
         }
         // 设置创建时间（若未手动设置）
         if (xmutGoods.getCreateTime() == null) {
