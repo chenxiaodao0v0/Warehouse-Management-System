@@ -39,13 +39,24 @@ request.interceptors.response.use(
   error => {
     // Token 失效（401）处理
     if (error.response && error.response.status === 401) {
+      // 如果当前就在登录页面，不需要显示错误或跳转
+      if (router.currentRoute.path === '/login') {
+        // 不显示错误信息，因为用户在登录页面时尝试获取需要认证的数据是正常情况
+        return Promise.reject(error)
+      }
+      
       Vue.prototype.$message.error('登录已过期，请重新登录')
       // 清除 Vuex 和本地缓存的 Token
       store.commit('user/clearToken')
-      // 跳转登录页（Vue2 路由跳转）
-      router.push('/login')
+      // 跳转登录页（Vue2 路由跳转），但要避免重复跳转到当前页面
+      if (router.currentRoute.path !== '/login') {
+        router.push('/login')
+      }
     } else {
-      Vue.prototype.$message.error('网络错误，请稍后重试')
+      // 对于登录页面的请求，也避免显示网络错误
+      if (router.currentRoute.path !== '/login' || error.response?.status !== 401) {
+        Vue.prototype.$message.error('网络错误，请稍后重试')
+      }
     }
     return Promise.reject(error)
   }
