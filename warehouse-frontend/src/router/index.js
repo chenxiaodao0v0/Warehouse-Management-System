@@ -30,45 +30,25 @@ const routes = [
         path: '',
         name: 'GoodsListPage',
         component: () => import('@/views/goods/GoodsList.vue')
-      }
-    ]
-  },
-  {
-    path: '/warehouse/add',
-    name: 'AddWarehouse',
-    component: HomeView,
-    children: [
+      },
       {
-        path: '',
-        name: 'AddWarehousePage',
+        path: '/warehouse/add',
+        name: 'AddWarehouse',
         component: () => import('@/views/warehouse/AddWarehouse.vue')
-      }
-    ]
-  },
-  {
-    path: '/enterprise/info',
-    name: 'EnterpriseInfo',
-    component: HomeView,
-    children: [
+      },
       {
-        path: '',
-        name: 'EnterpriseInfoPage',
+        path: '/enterprise/info',
+        name: 'EnterpriseInfo',
         component: () => import('@/views/enterprise/EnterpriseInfo.vue')
-      }
-    ]
-  },
-  {
-    path: '/inoutrecord',
-    name: 'InOutRecord',
-    component: HomeView,
-    children: [
+      },
       {
-        path: '',
-        name: 'InOutRecordPage',
+        path: '/inoutrecord',
+        name: 'InOutRecord',
         component: () => import('@/views/inOutRecord/InOutRecord.vue')
       }
     ]
-  }
+  },
+
 ]
 
 const router = new VueRouter({

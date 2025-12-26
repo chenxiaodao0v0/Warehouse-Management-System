@@ -14,9 +14,9 @@ import java.util.Date;
 @TableName("xmut_warehouse") // 对应你的数据库表名，无需修改
 public class XmutWarehouse {
     /**
-     * 主键ID，自定义生成策略
+     * 仓库主键ID（对应数据库id字段）
      */
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.ASSIGN_UUID)
     private String id;
 
     /**
@@ -26,27 +26,25 @@ public class XmutWarehouse {
     private String enterpriseId;
 
     /**
-     * 仓库名称
+     * 仓库名称（对应数据库name字段，核心绑定：实体类warehouseName ↔ 数据库name）
      */
     @TableField("name")
-    private String name;
+    private String warehouseName;
 
     /**
-     * 仓库地址
+     * 仓库地址（对应数据库address字段，无需注解）
      */
-    @TableField("address")
     private String address;
 
     /**
-     * 仓库负责人
+     * 仓库负责人（对应数据库manager字段，核心绑定：实体类contact ↔ 数据库manager）
      */
     @TableField("manager")
-    private String manager;
+    private String contact;
 
     /**
-     * 负责人电话
+     * 负责人电话（对应数据库phone字段，无需注解）
      */
-    @TableField("phone")
     private String phone;
 
     /**
@@ -55,8 +53,15 @@ public class XmutWarehouse {
     private Integer status;
 
     /**
+     * 备注信息（你数据库表中无该字段，若需要可添加，或删除该行）
+     */
+    @TableField(exist = false) // 表示该属性在数据库表中不存在，仅用于实体类传输
+    private String remark;
+
+    /**
      * 创建时间（对应数据库create_time字段，驼峰自动匹配）
      */
     private Date createTime;
+
 
 }

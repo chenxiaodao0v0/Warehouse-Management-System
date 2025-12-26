@@ -22,7 +22,7 @@
         >新增仓库</el-button>
       </div>
       
-      <!-- 企业信息未加载提示
+      <!-- 企业信息未加载提示 -->
       <el-alert
         v-if="!enterpriseLoaded"
         title="请先添加企业信息"
@@ -32,7 +32,7 @@
         :closable="false"
         style="margin-bottom: 20px;"
       >
-      </el-alert> -->
+      </el-alert>
       
       <!-- 表格区域 -->
       <el-table 
