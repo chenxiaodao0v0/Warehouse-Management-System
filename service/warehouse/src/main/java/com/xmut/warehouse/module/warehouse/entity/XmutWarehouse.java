@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Date;
@@ -19,6 +20,7 @@ public class XmutWarehouse {
     private String id;
 
     // 仓库基础信息字段
+    @JsonProperty("warehouseName") // 前端使用warehouseName，后端映射为name
     private String name; // 仓库名称
     private String address; // 仓库地址
     @TableField("manager")  // 数据库中实际字段名为manager
