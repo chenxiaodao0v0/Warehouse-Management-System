@@ -91,13 +91,13 @@ export function getGoodsByName(goodsName) {
 }
 
 /**
- * 根据仓库ID查询商品列表
+ * 根据仓库ID查询商品列表（包含商品详细信息）
  * @param {String} warehouseId 仓库ID
  * @returns Promise
  */
 export function getGoodsByWarehouseId(warehouseId) {
   return request({
-    url: `/api/goods/warehouse/${warehouseId}`,
+    url: `/api/warehouse-goods/warehouse/info/${warehouseId}`,
     method: 'get'
   })
 }

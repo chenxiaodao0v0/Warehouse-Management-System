@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
 import com.xmut.warehouse.module.goods.mapper.XmutGoodsMapper;
+import com.xmut.warehouse.module.goods.entity.XmutGoodsCategory;
+import com.xmut.warehouse.module.goods.mapper.XmutGoodsCategoryMapper;
 import com.xmut.warehouse.module.warehouse.entity.WarehouseGoods;
 import com.xmut.warehouse.module.warehouse.mapper.WarehouseGoodsMapper;
 import com.xmut.warehouse.module.warehouse.service.WarehouseGoodsService;
@@ -15,6 +17,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 /**
  * 仓库-商品关联明细Service实现类（核心库存操作）
@@ -25,6 +29,18 @@ public class WarehouseGoodsServiceImpl extends ServiceImpl<WarehouseGoodsMapper,
 
     @Autowired
     private XmutGoodsMapper xmutGoodsMapper;
+    
+    @Autowired
+    private XmutGoodsCategoryMapper xmutGoodsCategoryMapper;
+
+    // 获取分类名称的方法
+    private String getCategoryName(String categoryId) {
+        if (!StringUtils.hasText(categoryId)) {
+            return "无分类";
+        }
+        XmutGoodsCategory category = xmutGoodsCategoryMapper.selectById(categoryId);
+        return category != null ? category.getName() : "未知分类";
+    }
 
     @Override
     public R<List<WarehouseGoods>> getGoodsByWarehouseId(String warehouseId) {
@@ -85,7 +101,7 @@ public class WarehouseGoodsServiceImpl extends ServiceImpl<WarehouseGoodsMapper,
         return R.success("库存更新成功");
     }
 
-    // 新增：实现查询仓库商品（含商品名称、价格）
+    // 新增：实现查询仓库商品（含商品名称、价格等）
     @Override
     public R<List<Map<String, Object>>> getGoodsWithInfoByWarehouseId(String warehouseId) {
         // 1. 参数校验：仓库ID不能为空
@@ -93,44 +109,42 @@ public class WarehouseGoodsServiceImpl extends ServiceImpl<WarehouseGoodsMapper,
             return R.fail("仓库ID不能为空");
         }
 
-        // 2. 查询该仓库下所有的仓库-商品关联记录（只查核心字段）
+        // 2. 查询该仓库下所有的仓库-商品关联记录
         LambdaQueryWrapper<WarehouseGoods> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WarehouseGoods::getWarehouseId, warehouseId)
-                .select(
-                        WarehouseGoods::getId,
-                        WarehouseGoods::getWarehouseId,
-                        WarehouseGoods::getGoodsId,
-                        WarehouseGoods::getStock,
-                        WarehouseGoods::getCreateTime,
-                        WarehouseGoods::getUpdateTime
-                );
-        // 用selectMaps获取结果，返回Map集合，方便补充商品名称
-        List<Map<String, Object>> resultList = this.baseMapper.selectMaps(queryWrapper);
+        queryWrapper.eq(WarehouseGoods::getWarehouseId, warehouseId);
+        List<WarehouseGoods> warehouseGoodsList = this.baseMapper.selectList(queryWrapper);
 
-        // 3. 循环给每条记录补充商品名称、价格等基础信息
-        for (Map<String, Object> record : resultList) {
-            // 获取商品ID
-            String goodsId = (String) record.get("goods_id");
-            // 若商品ID有效，查询商品基础信息
-            if (StringUtils.hasText(goodsId)) {
-                XmutGoods goods = xmutGoodsMapper.selectById(goodsId);
-                if (goods != null) {
-                    // 补充商品名称
-                    record.put("goods_name", goods.getName());
-                    // 可选：补充商品价格、类别等其他基础信息
-                    record.put("goods_price", goods.getPrice());
-                    record.put("goods_category_id", goods.getCategoryId());
-                    record.put("goods_status", goods.getStatus());
-                } else {
-                    // 若商品不存在，填充默认值
-                    record.put("goods_name", "【商品已删除】");
-                    record.put("goods_price", 0.0);
-                }
+        // 3. 构建前端所需的数据结构，确保与前端表格列定义完全一致
+        List<Map<String, Object>> resultList = new ArrayList<>();
+        for (WarehouseGoods warehouseGoods : warehouseGoodsList) {
+            // 创建一个纯净的Map用于前端展示，字段顺序与前端表格列定义一致
+            Map<String, Object> displayItem = new HashMap<>();
+            
+            // 从商品表获取详细信息
+            XmutGoods goods = xmutGoodsMapper.selectById(warehouseGoods.getGoodsId());
+            if (goods != null) {
+                // 按照前端表格列顺序设置字段值（已移除minStock字段）
+                displayItem.put("goodsName", goods.getName() != null ? goods.getName() : "未知商品");
+                displayItem.put("goodsNo", goods.getId() != null ? goods.getId() : "N/A");
+                displayItem.put("categoryName", getCategoryName(goods.getCategoryId()) != null ? getCategoryName(goods.getCategoryId()) : "未分类");
+                displayItem.put("specification", goods.getRemark() != null ? goods.getRemark() : "");
+                displayItem.put("unit", "个");
+                displayItem.put("stock", warehouseGoods.getStock() != null ? warehouseGoods.getStock() : 0);
+                displayItem.put("price", goods.getPrice() != null ? goods.getPrice() : 0.0);
+                displayItem.put("image", goods.getPic() != null ? goods.getPic() : "");
             } else {
-                // 商品ID无效，填充默认值
-                record.put("goods_name", "【商品ID无效】");
-                record.put("goods_price", 0.0);
+                // 商品不存在时的默认值
+                displayItem.put("goodsName", "【商品已删除】");
+                displayItem.put("goodsNo", "N/A");
+                displayItem.put("categoryName", "N/A");
+                displayItem.put("specification", "");
+                displayItem.put("unit", "个");
+                displayItem.put("stock", warehouseGoods.getStock() != null ? warehouseGoods.getStock() : 0);
+                displayItem.put("price", 0.0);
+                displayItem.put("image", "");
             }
+            
+            resultList.add(displayItem);
         }
 
         // 4. 返回结果

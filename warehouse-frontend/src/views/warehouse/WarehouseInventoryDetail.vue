@@ -25,6 +25,7 @@
         stripe
         style="width: 100%"
         v-loading="loading"
+        :empty-text="'暂无数据'"
       >
         <el-table-column prop="goodsName" label="商品名称" width="200">
           <template slot-scope="scope">
@@ -34,11 +35,13 @@
                 :src="getImageUrl(scope.row.image)" 
                 class="goods-image" 
                 @error="handleImageError"
+                alt="商品图片"
               />
               <img 
                 v-else 
                 src="@/assets/logo.png" 
                 class="goods-image"
+                alt="默认图片"
               />
               <span>{{ scope.row.goodsName }}</span>
             </div>
@@ -50,15 +53,12 @@
         <el-table-column prop="unit" label="单位" width="80"></el-table-column>
         <el-table-column prop="stock" label="库存数量" width="100">
           <template slot-scope="scope">
-            <span :class="scope.row.stock < scope.row.minStock ? 'low-stock' : ''">
-              {{ scope.row.stock }}
-            </span>
+            <span>{{ scope.row.stock }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="minStock" label="最低库存" width="100"></el-table-column>
         <el-table-column prop="price" label="单价" width="100">
           <template slot-scope="scope">
-            ¥{{ scope.row.price ? scope.row.price.toFixed(2) : '0.00' }}
+            ¥{{ scope.row.price ? Number(scope.row.price).toFixed(2) : '0.00' }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150">
@@ -93,57 +93,93 @@ export default {
   data() {
     return {
       warehouseId: '',
-      warehouseName: '',
+      warehouseName: '加载中...',
       goodsList: [],
       loading: false
     }
   },
   computed: {
     totalStock() {
-      return this.goodsList.reduce((sum, item) => sum + (item.stock || 0), 0)
+      if (!this.goodsList || this.goodsList.length === 0) return 0;
+      return this.goodsList.reduce((sum, item) => {
+        const stock = item.stock || 0;
+        return sum + stock;
+      }, 0);
     },
     totalValue() {
-      return this.goodsList.reduce((sum, item) => {
-        const price = item.price || 0
-        const stock = item.stock || 0
-        return sum + (price * stock)
-      }, 0).toFixed(2)
+      if (!this.goodsList || this.goodsList.length === 0) return '0.00';
+      const total = this.goodsList.reduce((sum, item) => {
+        const price = item.price || 0;
+        const stock = item.stock || 0;
+        return sum + (parseFloat(price) * stock);
+      }, 0);
+      return total.toFixed(2);
     }
   },
-  created() {
-    this.warehouseId = this.$route.params.id
-    this.fetchWarehouseDetail()
-    this.fetchGoodsList()
+  async created() {
+    this.warehouseId = this.$route.params.id;
+    if (!this.warehouseId) {
+      this.$message.error('仓库ID不能为空');
+      return;
+    }
+    await this.fetchWarehouseDetail();
+    await this.fetchGoodsList();
   },
   methods: {
     async fetchWarehouseDetail() {
       try {
-        const response = await getWarehouseById(this.warehouseId)
-        if (response.code === 200) {
-          this.warehouseName = response.data.warehouseName
+        this.loading = true;
+        console.log('开始获取仓库详情，ID:', this.warehouseId);
+        const response = await getWarehouseById(this.warehouseId);
+        console.log('仓库详情响应:', response);
+        
+        if (response && response.code === 200) {
+          this.warehouseName = response.data && response.data.warehouseName ? response.data.warehouseName : '未知仓库';
         } else {
-          this.$message.error(response.message || '获取仓库信息失败')
+          this.$message.error(response?.message || '获取仓库信息失败');
         }
       } catch (error) {
-        console.error('获取仓库详情失败:', error)
-        this.$message.error('获取仓库信息失败')
+        console.error('获取仓库详情失败:', error);
+        this.$message.error('获取仓库信息失败: ' + (error.message || '未知错误'));
       }
     },
     
     async fetchGoodsList() {
-      this.loading = true
       try {
-        const response = await getGoodsByWarehouseId(this.warehouseId)
-        if (response.code === 200) {
-          this.goodsList = response.data
+        this.loading = true;
+        console.log('开始获取商品列表，仓库ID:', this.warehouseId);
+        const response = await getGoodsByWarehouseId(this.warehouseId);
+        console.log('商品列表响应:', response);
+        
+        if (response && response.code === 200) {
+          // 确保数据是数组且包含有效数据
+          const data = response.data || [];
+          if (Array.isArray(data)) {
+            // 确保所有数据都具有正确的格式
+            this.goodsList = data.map(item => ({
+              goodsName: item.goodsName || '未知商品',
+              goodsNo: item.goodsNo || 'N/A',
+              categoryName: item.categoryName || '未分类',
+              specification: item.specification || '',
+              unit: item.unit || '个',
+              stock: item.stock !== undefined && item.stock !== null ? item.stock : 0,
+              price: item.price !== undefined && item.price !== null ? item.price : 0,
+              image: item.image || ''
+            }));
+            console.log('处理后的商品列表:', this.goodsList);
+          } else {
+            this.goodsList = [];
+          }
         } else {
-          this.$message.error(response.message || '获取商品列表失败')
+          this.$message.error(response?.message || '获取商品列表失败');
+          this.goodsList = [];
         }
       } catch (error) {
-        console.error('获取商品列表失败:', error)
-        this.$message.error('获取商品列表失败')
+        console.error('获取商品列表失败:', error);
+        this.$message.error('获取商品列表失败: ' + (error.message || '未知错误'));
+        this.goodsList = [];
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     
@@ -152,29 +188,33 @@ export default {
     },
     
     getImageUrl(imagePath) {
-      if (!imagePath) return '@/assets/logo.png'
+      if (!imagePath) {
+        return require('@/assets/logo.png');
+      }
       
       // 判断是否为完整URL
       if (imagePath.startsWith('http') || imagePath.startsWith('//')) {
-        return imagePath
+        return imagePath;
       }
       
       // 拼接基础API路径
-      return `${process.env.VUE_APP_API_BASE_URL || '/api'}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`
+      const baseUrl = process.env.VUE_APP_API_BASE_URL || '';
+      const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+      return `${baseUrl}${path}`;
     },
     
     handleImageError(event) {
-      event.target.src = '@/assets/logo.png'
+      event.target.src = require('@/assets/logo.png');
     },
     
     editGoods(goods) {
       // 这里可以跳转到商品编辑页面
-      this.$router.push(`/goods/edit/${goods.id}`)
+      this.$router.push(`/goods/edit/${goods.goodsId || goods.id}`)
     },
     
     addStock(goods) {
       // 这里可以跳转到入库操作页面
-      this.$router.push(`/inoutrecord/add?goodsId=${goods.id}&warehouseId=${this.warehouseId}`)
+      this.$router.push(`/inoutrecord/add?goodsId=${goods.goodsId || goods.id}&warehouseId=${this.warehouseId}`)
     }
   }
 }
@@ -246,8 +286,4 @@ export default {
   border-radius: 4px;
 }
 
-.low-stock {
-  color: #f56c6c;
-  font-weight: bold;
-}
 </style>
