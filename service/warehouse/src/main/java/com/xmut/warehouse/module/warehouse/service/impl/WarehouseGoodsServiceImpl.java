@@ -1,4 +1,4 @@
-package com.xmut.warehouse.module.warehouse.service.impl;
+hipackage com.xmut.warehouse.module.warehouse.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

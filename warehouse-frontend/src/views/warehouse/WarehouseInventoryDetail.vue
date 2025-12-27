@@ -86,14 +86,14 @@
 
 <script>
 import { getWarehouseById } from '@/api/warehouse'
-import { getGoodsByWarehouseId } from '@/api/goods'
+import { getGoodsWithInfoByWarehouseId } from '@/api/warehouse'
 
 export default {
   name: 'WarehouseInventoryDetail',
   data() {
     return {
       warehouseId: '',
-      warehouseName: '加载中...',
+      warehouseName: '',
       goodsList: [],
       loading: false
     }
@@ -128,19 +128,39 @@ export default {
   methods: {
     async fetchWarehouseDetail() {
       try {
-        this.loading = true;
         console.log('开始获取仓库详情，ID:', this.warehouseId);
         const response = await getWarehouseById(this.warehouseId);
         console.log('仓库详情响应:', response);
         
-        if (response && response.code === 200) {
-          this.warehouseName = response.data && response.data.warehouseName ? response.data.warehouseName : '未知仓库';
+        // 检查响应结构，兼容直接返回对象和标准响应格式
+        if (response && (response.code === 200 || (!response.code && response.warehouseName))) {
+          // 如果是标准格式 {code: 200, data: {...}}
+          if (response.code === 200 && response.data) {
+            this.warehouseName = response.data.warehouseName || 
+                                response.data.name || 
+                                response.data.warehouse_name || 
+                                `仓库 ${this.warehouseId}`;
+          } 
+          // 如果是直接返回对象格式
+          else if (response.warehouseName) {
+            this.warehouseName = response.warehouseName;
+          } 
+          // 其他情况使用默认值
+          else {
+            this.warehouseName = response.warehouseName || `仓库 ${this.warehouseId}`;
+          }
+          
+          console.log('设置仓库名称为:', this.warehouseName);
         } else {
-          this.$message.error(response?.message || '获取仓库信息失败');
+          // 如果后端返回错误信息，记录但不显示错误消息
+          const errorMessage = response?.message || response?.msg || '获取仓库信息失败';
+          console.error('获取仓库信息响应错误:', errorMessage);
+          this.warehouseName = `仓库 ${this.warehouseId}`;
         }
       } catch (error) {
         console.error('获取仓库详情失败:', error);
-        this.$message.error('获取仓库信息失败: ' + (error.message || '未知错误'));
+        // 出错时也使用默认名称，不显示错误消息
+        this.warehouseName = `仓库 ${this.warehouseId}`;
       }
     },
     
@@ -148,30 +168,48 @@ export default {
       try {
         this.loading = true;
         console.log('开始获取商品列表，仓库ID:', this.warehouseId);
-        const response = await getGoodsByWarehouseId(this.warehouseId);
+        // 使用正确的API接口，获取包含商品详细信息的数据
+        const response = await getGoodsWithInfoByWarehouseId(this.warehouseId);
         console.log('商品列表响应:', response);
         
-        if (response && response.code === 200) {
-          // 确保数据是数组且包含有效数据
-          const data = response.data || [];
-          if (Array.isArray(data)) {
-            // 确保所有数据都具有正确的格式
-            this.goodsList = data.map(item => ({
-              goodsName: item.goodsName || '未知商品',
-              goodsNo: item.goodsNo || 'N/A',
-              categoryName: item.categoryName || '未分类',
-              specification: item.specification || '',
-              unit: item.unit || '个',
-              stock: item.stock !== undefined && item.stock !== null ? item.stock : 0,
-              price: item.price !== undefined && item.price !== null ? item.price : 0,
-              image: item.image || ''
-            }));
-            console.log('处理后的商品列表:', this.goodsList);
-          } else {
-            this.goodsList = [];
-          }
+        // 检查响应格式，兼容多种可能的格式
+        let data = [];
+        
+        // 情况1: 标准格式 {code: 200, data: [...]}
+        if (response && response.code === 200 && response.data) {
+          data = response.data;
+        } 
+        // 情况2: 直接返回数组
+        else if (Array.isArray(response)) {
+          data = response;
+        }
+        // 情况3: 非标准格式但包含data字段
+        else if (response && response.data && Array.isArray(response.data)) {
+          data = response.data;
+        } 
+        // 情况4: 作为后备，检查response本身是否为数组
+        else {
+          console.warn('响应格式不符合预期，尝试直接使用响应数据或显示错误');
+          this.$message.error('获取商品列表响应格式异常');
+          this.goodsList = [];
+          this.loading = false; // 确保即使在异常情况下也关闭加载状态
+          return;
+        }
+        
+        if (Array.isArray(data)) {
+          // 确保所有数据都具有正确的格式
+          this.goodsList = data.map(item => ({
+            goodsName: item.goodsName || '未知商品',
+            goodsNo: item.goodsNo || 'N/A',
+            categoryName: item.categoryName || '未分类',
+            specification: item.specification || '',
+            unit: item.unit || '个',
+            stock: item.stock !== undefined && item.stock !== null ? item.stock : 0,
+            price: item.price !== undefined && item.price !== null ? item.price : 0,
+            image: item.image || ''
+          }));
+          console.log('处理后的商品列表:', this.goodsList);
         } else {
-          this.$message.error(response?.message || '获取商品列表失败');
           this.goodsList = [];
         }
       } catch (error) {
@@ -179,7 +217,7 @@ export default {
         this.$message.error('获取商品列表失败: ' + (error.message || '未知错误'));
         this.goodsList = [];
       } finally {
-        this.loading = false;
+        this.loading = false; // 无论成功还是失败，都要关闭加载状态
       }
     },
     
@@ -197,10 +235,28 @@ export default {
         return imagePath;
       }
       
-      // 拼接基础API路径
-      const baseUrl = process.env.VUE_APP_API_BASE_URL || '';
-      const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-      return `${baseUrl}${path}`;
+      // 检查是否为绝对路径（以/开头）
+      if (imagePath.startsWith('/')) {
+        // 从API请求的baseUrl获取正确的端口
+        // 使用与API请求相同的基础URL，而不是window.location.origin
+        let baseUrl = process.env.VUE_APP_API_BASE_URL;
+        
+        // 如果环境变量未设置，则尝试从已知的API请求中获取基础URL
+        if (!baseUrl) {
+          // 默认使用与前端同端口的API服务器，或者根据项目实际情况设置
+          baseUrl = 'http://localhost:8080'; // 根据之前的请求，后端端口是8080
+        }
+        
+        // 避免重复斜杠
+        return `${baseUrl}${imagePath}`;
+      }
+      
+      // 如果是相对路径，拼接基础API路径
+      let baseUrl = process.env.VUE_APP_API_BASE_URL;
+      if (!baseUrl) {
+        baseUrl = 'http://localhost:8080';
+      }
+      return `${baseUrl}/${imagePath}`;
     },
     
     handleImageError(event) {
@@ -284,6 +340,6 @@ export default {
   object-fit: cover;
   margin-right: 10px;
   border-radius: 4px;
+  border: 1px solid #dcdfe6;
 }
-
 </style>

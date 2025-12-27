@@ -63,3 +63,15 @@ export function deleteWarehouse(id) {
     method: 'delete'
   })
 }
+
+/**
+ * 根据仓库ID获取商品列表（包含商品详细信息）
+ * @param {String} warehouseId 仓库ID
+ * @returns Promise
+ */
+export function getGoodsWithInfoByWarehouseId(warehouseId) {
+  return request({
+    url: `/api/warehouse-goods/warehouse/info/${warehouseId}`,
+    method: 'get'
+  })
+}
