@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xmut.warehouse.common.generator.IdGenerator;
+import com.xmut.warehouse.common.generator.IdSequenceGenerator;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
 import com.xmut.warehouse.module.goods.mapper.XmutGoodsMapper;
@@ -61,16 +61,11 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
         if (!StringUtils.hasText(xmutGoods.getCategoryId())) {
             return R.fail("商品类别ID不能为空");
         }
-        // 手动设置ID
-        if (!StringUtils.hasText(xmutGoods.getId())) {
-            xmutGoods.setId(IdGenerator.nextGoodsId());
-        }
-        // 设置创建时间（若未手动设置）
-        if (xmutGoods.getCreateTime() == null) {
-            xmutGoods.setCreateTime(new Date());
-        }
+        // 使用ID序列生成器生成ID并设置创建时间
+        xmutGoods.setId(IdSequenceGenerator.nextGoodsId());
+        xmutGoods.setCreateTime(new Date());
         // 保存商品（仅基础信息，无warehouse_id和stock）
-        boolean saveSuccess = this.save(xmutGoods);
+        boolean saveSuccess = super.save(xmutGoods);
         if (saveSuccess) {
             return R.success("商品新增成功");
         } else {
@@ -95,6 +90,8 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
         if (!StringUtils.hasText(xmutGoods.getCategoryId())) {
             return R.fail("商品类别ID不能为空");
         }
+        // 更新时不修改创建时间
+        xmutGoods.setCreateTime(null);
         // 更新商品（仅基础信息，不涉及warehouse_id和stock）
         boolean updateSuccess = this.updateById(xmutGoods);
         if (updateSuccess) {

@@ -430,8 +430,11 @@ export default {
               await updateWarehouse(formData)
               this.$message.success('修改仓库成功')
             } else {
-              // 新增仓库
-              await addWarehouse(formData)
+              // 新增仓库，创建一个不包含ID的副本
+              const warehouseData = { ...formData }
+              delete warehouseData.id  // 确保不提交ID字段
+              
+              await addWarehouse(warehouseData)
               this.$message.success('添加仓库成功')
             }
             

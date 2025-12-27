@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xmut.warehouse.common.generator.IdGenerator;
+import com.xmut.warehouse.common.generator.IdSequenceGenerator;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.common.util.PhoneValidator;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
@@ -78,10 +78,10 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
 
         // 3. 手动设置ID
         if (!StringUtils.hasText(inOutRecord.getId())) {
-            inOutRecord.setId(IdGenerator.nextRecordId());
+            inOutRecord.setId(IdSequenceGenerator.nextRecordId());
         }
 
-        // 4. 强制设置入库类型+操作时间（不变）
+        // 4. 强制设置入库类型+操作时间
         inOutRecord.setType(1);
         inOutRecord.setOperateTime(new Date());
 
@@ -140,10 +140,10 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
 
         // 3. 手动设置ID
         if (!StringUtils.hasText(inOutRecord.getId())) {
-            inOutRecord.setId(IdGenerator.nextRecordId());
+            inOutRecord.setId(IdSequenceGenerator.nextRecordId());
         }
 
-        // 4. 强制设置出库类型+操作时间（不变）
+        // 4. 强制设置出库类型+操作时间
         inOutRecord.setType(2);
         inOutRecord.setOperateTime(new Date());
 
@@ -207,10 +207,10 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
 
         // 3. 手动设置ID
         if (!StringUtils.hasText(inOutRecord.getId())) {
-            inOutRecord.setId(IdGenerator.nextRecordId());
+            inOutRecord.setId(IdSequenceGenerator.nextRecordId());
         }
 
-        // 4. 强制设置调货类型+操作时间（不变）
+        // 4. 强制设置调货类型+操作时间
         inOutRecord.setType(3);
         inOutRecord.setOperateTime(new Date());
 
@@ -280,5 +280,38 @@ public class InOutRecordServiceImpl extends ServiceImpl<InOutRecordMapper, InOut
         queryWrapper.orderByDesc(InOutRecord::getOperateTime); // 按操作时间倒序，最新的在前
         IPage<InOutRecord> recordIPage = this.baseMapper.selectPage(page, queryWrapper);
         return R.success(recordIPage);
+    }
+
+    @Override
+    public boolean save(InOutRecord inOutRecord) {
+        // 生成ID，确保ID唯一
+        String newId = generateUniqueRecordId();
+        inOutRecord.setId(newId);
+        // 设置操作时间
+        inOutRecord.setOperateTime(new Date());
+        // 保存到数据库
+        return super.save(inOutRecord);
+    }
+
+    /**
+     * 生成唯一的记录ID
+     * @return 唯一的记录ID
+     */
+    private String generateUniqueRecordId() {
+        String newId;
+        do {
+            newId = IdSequenceGenerator.nextRecordId();
+            // 检查ID是否已存在，如果存在则继续生成
+        } while (this.baseMapper.selectById(newId) != null);
+        
+        return newId;
+    }
+
+    @Override
+    public boolean updateById(InOutRecord inOutRecord) {
+        // 更新时不修改ID和操作时间
+        inOutRecord.setOperateTime(null);
+        // 更新数据库
+        return super.updateById(inOutRecord);
     }
 }

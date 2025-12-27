@@ -359,9 +359,12 @@ export default {
               await updateGoods(this.goodsForm)
               this.$message.success('修改商品成功')
             } else {
-              // 添加商品
+              // 添加商品，创建一个不包含ID的副本
+              const goodsData = { ...this.goodsForm }
+              delete goodsData.id  // 确保不提交ID字段
+              
               const { addGoods } = await import('@/api/goods')
-              await addGoods(this.goodsForm)
+              await addGoods(goodsData)
               this.$message.success('添加商品成功')
             }
             

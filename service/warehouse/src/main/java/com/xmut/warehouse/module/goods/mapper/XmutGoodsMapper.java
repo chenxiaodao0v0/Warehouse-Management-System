@@ -52,4 +52,10 @@ public interface XmutGoodsMapper extends BaseMapper<XmutGoods> {
      */
     @Select("select * from xmut_goods where id = #{id}")
     XmutGoods selectById(String id);
+    
+    /**
+     * 获取最大的商品ID，用于ID序列生成
+     */
+    @Select("SELECT MAX(id) FROM xmut_goods WHERE id LIKE 'G%'")
+    String getMaxGoodsId();
 }

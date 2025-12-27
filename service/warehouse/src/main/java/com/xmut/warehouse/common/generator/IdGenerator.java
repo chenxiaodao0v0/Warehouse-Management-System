@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ID生成器工具类，为不同实体生成不同格式的ID（基于原子计数器）
+ * 注意：商品ID生成已迁移到IdSequenceGenerator，此处不再包含商品ID生成方法
  */
 public class IdGenerator {
 
@@ -17,22 +18,9 @@ public class IdGenerator {
     
     // 初始化计数器
     static {
-        counters.put("goods", new AtomicInteger(1001));      // G开头4位数
+        // 商品ID生成已迁移到数据库序列，此处不再初始化
         counters.put("warehouse", new AtomicInteger(11));     // W开头2位数
         counters.put("record", new AtomicInteger(100001));    // R开头6位数
-    }
-
-    /**
-     * 为商品实体生成ID (G开头的4位数字)
-     */
-    public static String nextGoodsId() {
-        int nextId = counters.get("goods").getAndIncrement();
-        // 如果ID超出范围，重置到起始值
-        if (nextId > 9999) {
-            counters.get("goods").set(1001);
-            nextId = counters.get("goods").getAndIncrement();
-        }
-        return "G" + String.format("%04d", nextId);
     }
 
     /**
@@ -66,7 +54,8 @@ public class IdGenerator {
      */
     public static String nextIdByEntity(Object entity) {
         if (entity instanceof XmutGoods) {
-            return nextGoodsId();
+            // 商品ID生成已迁移到IdSequenceGenerator
+            return IdSequenceGenerator.nextGoodsId();
         } else if (entity instanceof XmutWarehouse) {
             return nextWarehouseId();
         } else if (entity instanceof InOutRecord) {

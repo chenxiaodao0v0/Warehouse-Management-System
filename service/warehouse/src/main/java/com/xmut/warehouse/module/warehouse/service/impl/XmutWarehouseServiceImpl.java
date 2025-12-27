@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xmut.warehouse.common.generator.IdGenerator;
+import com.xmut.warehouse.common.generator.IdSequenceGenerator;
 import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.goods.mapper.XmutGoodsMapper; // 货品Mapper（你后续会创建，暂时保留无需修改）
 import com.xmut.warehouse.module.warehouse.entity.XmutWarehouse;
@@ -45,7 +45,6 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         if (StringUtils.hasText(warehouseName)) {
             queryWrapper.like(XmutWarehouse::getName, warehouseName);
         }
-
         // 分页查询（MyBatis-Plus自带，你的项目已配置分页插件，无需额外处理）
         IPage<XmutWarehouse> warehouseIPage = this.baseMapper.selectPage(page, queryWrapper);
         return R.success(warehouseIPage);
@@ -77,16 +76,7 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         if (count > 0) {
             return R.fail("该企业下已存在同名仓库，请勿重复添加");
         }
-        // 手动设置ID
-        if (!StringUtils.hasText(warehouse.getId())) {
-            warehouse.setId(IdGenerator.nextWarehouseId());
-        }
-        // 设置默认值（与用户/企业模块一致）
-        if (warehouse.getStatus() == null) {
-            warehouse.setStatus(1); // 默认启用
-        }
-        warehouse.setCreateTime(new Date());
-        // 新增仓库（MyBatis-Plus自带save方法）
+        // 使用统一的 save 方法处理 ID 生成和默认值
         boolean saveSuccess = this.save(warehouse);
         return saveSuccess ? R.success("仓库新增成功") : R.fail("仓库新增失败");
     }
@@ -162,5 +152,23 @@ public class XmutWarehouseServiceImpl extends ServiceImpl<XmutWarehouseMapper, X
         // 批量删除仓库（MyBatis-Plus自带removeByIds方法）
         boolean deleteSuccess = this.removeByIds(ids);
         return deleteSuccess ? R.success("批量删除仓库成功") : R.fail("批量删除仓库失败");
+    }
+
+    @Override
+    public boolean save(XmutWarehouse warehouse) {
+        // 生成ID
+        warehouse.setId(IdSequenceGenerator.nextWarehouseId());
+        // 设置创建时间
+        warehouse.setCreateTime(new Date());
+        // 保存到数据库
+        return super.save(warehouse);
+    }
+
+    @Override
+    public boolean updateById(XmutWarehouse warehouse) {
+        // 更新时不修改ID和创建时间
+        warehouse.setCreateTime(null);
+        // 更新数据库
+        return super.updateById(warehouse);
     }
 }
