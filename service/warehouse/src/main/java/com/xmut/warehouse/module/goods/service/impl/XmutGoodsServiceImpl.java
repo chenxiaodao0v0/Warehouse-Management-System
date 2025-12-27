@@ -9,6 +9,9 @@ import com.xmut.warehouse.common.result.R;
 import com.xmut.warehouse.module.goods.entity.XmutGoods;
 import com.xmut.warehouse.module.goods.mapper.XmutGoodsMapper;
 import com.xmut.warehouse.module.goods.service.XmutGoodsService;
+import com.xmut.warehouse.module.warehouse.entity.WarehouseGoods;
+import com.xmut.warehouse.module.warehouse.service.WarehouseGoodsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,12 +23,16 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 商品基础信息Service实现类（仅负责商品基础信息CRUD，无仓库/库存操作）
  */
 @Service
 public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods> implements XmutGoodsService {
+
+    @Autowired
+    private WarehouseGoodsService warehouseGoodsService;
 
     // ========== 保留：商品分页查询（仅按商品名称模糊查询，无仓库条件） ==========
     @Override
@@ -115,17 +122,57 @@ public class XmutGoodsServiceImpl extends ServiceImpl<XmutGoodsMapper, XmutGoods
 
     @Override
     public R<?> batchDeleteGoods(List<String> ids) {
-        return null;
+        if (ids == null || ids.isEmpty()) {
+            return R.fail("商品ID列表不能为空");
+        }
+        boolean deleteSuccess = this.removeBatchByIds(ids);
+        if (deleteSuccess) {
+            return R.success("商品批量删除成功");
+        } else {
+            return R.fail("商品批量删除失败");
+        }
     }
 
     @Override
     public R<List<XmutGoods>> getGoodsByWarehouseId(String warehouseId) {
-        return null;
+        if (!StringUtils.hasText(warehouseId)) {
+            return R.fail("仓库ID不能为空");
+        }
+
+        try {
+            // 1. 查询仓库-商品关联表，获取指定仓库下的所有商品ID
+            List<WarehouseGoods> warehouseGoodsList = warehouseGoodsService.getGoodsByWarehouseId(warehouseId).getData();
+            if (warehouseGoodsList == null || warehouseGoodsList.isEmpty()) {
+                return R.success(null); // 返回空列表而不是null
+            }
+
+            // 2. 提取商品ID列表
+            List<String> goodsIds = warehouseGoodsList.stream()
+                    .map(WarehouseGoods::getGoodsId)
+                    .collect(Collectors.toList());
+
+            // 3. 根据商品ID列表查询商品详细信息
+            LambdaQueryWrapper<XmutGoods> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.in(XmutGoods::getId, goodsIds);
+            List<XmutGoods> goodsList = this.baseMapper.selectList(queryWrapper);
+
+            return R.success(goodsList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return R.fail("查询仓库商品列表失败: " + e.getMessage());
+        }
     }
 
     @Override
     public R<List<XmutGoods>> getGoodsByCategoryId(String categoryId) {
-        return null;
+        if (!StringUtils.hasText(categoryId)) {
+            return R.fail("商品类别ID不能为空");
+        }
+
+        LambdaQueryWrapper<XmutGoods> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(XmutGoods::getCategoryId, categoryId);
+        List<XmutGoods> goodsList = this.baseMapper.selectList(queryWrapper);
+        return R.success(goodsList);
     }
 
     @Override

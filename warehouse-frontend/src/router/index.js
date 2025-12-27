@@ -45,6 +45,17 @@ const routes = [
         component: () => import('@/views/warehouse/AddWarehouse.vue')
       },
       {
+        path: '/warehouse/inventory',
+        name: 'InventoryOverview',
+        component: () => import('@/views/warehouse/InventoryOverview.vue')
+      },
+      {
+        path: '/warehouse/detail/:id',
+        name: 'WarehouseInventoryDetail',
+        component: () => import('@/views/warehouse/WarehouseInventoryDetail.vue'),
+        props: true
+      },
+      {
         path: '/enterprise/info',
         name: 'EnterpriseInfo',
         component: () => import('@/views/enterprise/EnterpriseInfo.vue')

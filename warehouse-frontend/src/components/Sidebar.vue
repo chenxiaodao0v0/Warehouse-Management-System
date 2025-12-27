@@ -36,6 +36,10 @@
           <i class="el-icon-menu"></i>
           <span slot="title">仓库信息</span>
         </el-menu-item>
+        <el-menu-item index="/warehouse/inventory">
+          <i class="el-icon-menu"></i>
+          <span slot="title">库存信息</span>
+        </el-menu-item>
       </el-submenu>
       
       <!-- 出入库调度 -->

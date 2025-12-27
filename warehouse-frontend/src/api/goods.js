@@ -91,6 +91,18 @@ export function getGoodsByName(goodsName) {
 }
 
 /**
+ * 根据仓库ID查询商品列表
+ * @param {String} warehouseId 仓库ID
+ * @returns Promise
+ */
+export function getGoodsByWarehouseId(warehouseId) {
+  return request({
+    url: `/api/goods/warehouse/${warehouseId}`,
+    method: 'get'
+  })
+}
+
+/**
  * 上传商品图片
  * @param {FormData} data 包含图片文件的表单数据
  * @returns Promise
