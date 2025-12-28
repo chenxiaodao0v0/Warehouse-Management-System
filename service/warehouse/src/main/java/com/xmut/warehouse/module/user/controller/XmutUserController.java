@@ -6,6 +6,7 @@ import com.xmut.warehouse.module.user.entity.XmutUser;
 import com.xmut.warehouse.module.user.service.XmutUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -31,6 +32,33 @@ public class XmutUserController {
         String password = loginData.get("password");
         // 调用Service层登录方法
         return userService.login(username, password);
+    }
+
+    /**
+     * 获取当前用户信息
+     * @return 用户信息
+     */
+    @GetMapping("/info")
+    public R<?> getUserInfo(Authentication authentication) {
+        // 从认证信息中获取用户ID
+        String userId = (String) authentication.getPrincipal();
+        System.out.println("获取用户信息 - 当前用户ID: " + userId); // 添加调试信息
+        if (userId == null) {
+            System.out.println("获取用户信息失败 - 用户未认证"); // 添加调试信息
+            return R.fail("用户未认证");
+        }
+        
+        XmutUser user = this.userService.getById(userId);
+        System.out.println("获取用户信息 - 查询到的用户: " + user); // 添加调试信息
+        if (user == null) {
+            System.out.println("获取用户信息失败 - 用户不存在"); // 添加调试信息
+            return R.fail("用户不存在");
+        }
+        
+        // 返回用户信息（不包含密码）
+        user.setPassword(null); // 不返回密码信息
+        System.out.println("获取用户信息成功 - 用户数据: " + user); // 添加调试信息
+        return R.success(user);
     }
 
     /**
@@ -61,14 +89,41 @@ public class XmutUserController {
     }
 
     /**
-     * 更新用户
+     * 更新用户信息
      * @param user 用户信息
      * @return 更新结果
      */
     @PutMapping("/update")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public R<?> updateUser(@RequestBody XmutUser user) {
-        return userService.updateUser(user);
+    public R<?> updateUserInfo(@RequestBody XmutUser user, Authentication authentication) {
+        // 获取当前用户ID
+        String currentUserId = (String) authentication.getPrincipal();
+        if (currentUserId == null) {
+            return R.fail("用户未认证");
+        }
+        
+        // 确保只能更新自己的信息
+        if (!currentUserId.equals(user.getId())) {
+            return R.fail("不能更新其他用户的信息");
+        }
+        
+        // 检查用户是否存在
+        XmutUser existingUser = this.userService.getById(user.getId());
+        if (existingUser == null) {
+            return R.fail("用户不存在");
+        }
+        
+        // 设置不允许修改的字段
+        user.setPassword(existingUser.getPassword()); // 保持原密码不变
+        user.setRole(existingUser.getRole()); // 保持原角色不变
+        user.setStatus(existingUser.getStatus()); // 保持原状态不变
+        user.setUsername(existingUser.getUsername()); // 保持用户名不变
+        
+        boolean result = this.userService.updateById(user);
+        if (result) {
+            return R.success("用户信息更新成功");
+        } else {
+            return R.fail("用户信息更新失败");
+        }
     }
 
     /**

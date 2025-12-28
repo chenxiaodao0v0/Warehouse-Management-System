@@ -313,6 +313,8 @@ export default {
         if (error !== 'cancel') {
           console.error('重置密码失败：', error)
           this.$message.error('重置密码失败')
+        } else {
+          this.$message.info('已取消重置密码')
         }
       }
     },
@@ -453,3 +455,4 @@ export default {
   color: white;
   background-color: #f56c6c;
 }
+</style>

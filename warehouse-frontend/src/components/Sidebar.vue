@@ -71,6 +71,17 @@
           <span slot="title">用户列表</span>
         </el-menu-item>
       </el-submenu>
+      
+      <!-- 个人中心 -->
+      <el-submenu index="profile">
+        <template slot="title">
+          <i class="el-icon-setting"></i>
+          <span>个人中心</span>
+        </template>
+        <el-menu-item index="/user/profile">
+          <span slot="title">个人信息</span>
+        </el-menu-item>
+      </el-submenu>
     </el-menu>
   </div>
 </template>

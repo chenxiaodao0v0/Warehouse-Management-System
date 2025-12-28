@@ -5,79 +5,49 @@
     </div>
     <div class="navbar-user">
       <span class="user-info">欢迎，{{ userInfo.nickname || userInfo.username }}</span>
-      <el-button type="text" @click="handleChangePassword" class="password-btn">修改密码</el-button>
-      <el-button type="text" @click="handleLogout" class="logout-btn">退出</el-button>
+      <el-dropdown @command="handleCommand" class="user-dropdown">
+        <span class="el-dropdown-link">
+          <i class="el-icon-setting"></i>
+        </span>
+        <el-dropdown-menu slot="dropdown">
+          <el-dropdown-item command="profile">
+            <i class="el-icon-user"></i>
+            个人信息
+          </el-dropdown-item>
+          <el-dropdown-item command="logout">
+            <i class="el-icon-switch-button"></i>
+            退出登录
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </el-dropdown>
     </div>
-
-    <!-- 修改密码对话框 -->
-    <el-dialog
-      title="修改密码"
-      :visible.sync="passwordDialogVisible"
-      width="400px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordForm" label-width="100px">
-        <el-form-item label="原密码" prop="oldPassword">
-          <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码"></el-input>
-        </el-form-item>
-        <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码"></el-input>
-        </el-form-item>
-        <el-form-item label="确认新密码" prop="confirmNewPassword">
-          <el-input v-model="passwordForm.confirmNewPassword" type="password" placeholder="请再次输入新密码"></el-input>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="passwordDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="submitChangePassword">确 定</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { changePassword } from '@/api/user'
 
 export default {
   name: 'Navbar',
-  data() {
-    // 自定义确认密码验证规则
-    const validateConfirmNewPassword = (rule, value, callback) => {
-      if (value !== this.passwordForm.newPassword) {
-        callback(new Error('两次输入的密码不一致'))
-      } else {
-        callback()
-      }
-    }
-
-    return {
-      userInfo: {},
-      passwordDialogVisible: false,
-      passwordForm: {
-        oldPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
-      },
-      passwordRules: {
-        oldPassword: [
-          { required: true, message: '请输入原密码', trigger: 'blur' }
-        ],
-        newPassword: [
-          { required: true, message: '请输入新密码', trigger: 'blur' },
-          { min: 6, message: '新密码长度不能少于6位', trigger: 'blur' }
-        ],
-        confirmNewPassword: [
-          { required: true, message: '请确认新密码', trigger: 'blur' },
-          { validator: validateConfirmNewPassword, trigger: 'blur' }
-        ]
-      }
-    }
-  },
   created() {
     // 从store中获取用户信息
     this.userInfo = this.$store.state.user.userInfo
   },
   methods: {
+    handleCommand(command) {
+      if (command === 'profile') {
+        this.goToProfile()
+      } else if (command === 'logout') {
+        this.handleLogout()
+      }
+    },
+    
+    goToProfile() {
+      this.$router.push('/dashboard')
+      this.$nextTick(() => {
+        this.$router.push('/user/profile')
+      })
+    },
+    
     handleLogout() {
       this.$confirm('确定要退出登录吗？', '提示', {
         confirmButtonText: '确定',
@@ -91,40 +61,6 @@ export default {
         this.$message.success('已退出登录')
       }).catch(() => {
         // 取消操作
-      })
-    },
-    
-    handleChangePassword() {
-      // 重置表单
-      this.passwordForm = {
-        oldPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
-      }
-      this.passwordDialogVisible = true
-    },
-    
-    async submitChangePassword() {
-      this.$refs.passwordForm.validate(async (valid) => {
-        if (!valid) {
-          return this.$message.warning('请完善密码信息')
-        }
-
-        try {
-          // 获取当前用户ID
-          const userId = this.$store.state.user.userInfo.id
-          
-          await changePassword(userId, {
-            oldPassword: this.passwordForm.oldPassword,
-            newPassword: this.passwordForm.newPassword
-          })
-          
-          this.$message.success('密码修改成功')
-          this.passwordDialogVisible = false
-        } catch (error) {
-          console.error('修改密码失败：', error)
-          this.$message.error('密码修改失败')
-        }
       })
     }
   }
@@ -156,7 +92,12 @@ export default {
   margin-right: 20px;
 }
 
-.password-btn, .logout-btn {
+.password-btn, .logout-btn, .el-dropdown-link {
   color: #fff;
+  cursor: pointer;
+}
+
+.el-dropdown-link i {
+  font-size: 18px;
 }
 </style>

@@ -89,14 +89,19 @@ const routes = [
     ]
   },
   {
-    path: '/user/list',
-    name: 'UserList',
+    path: '/user',
+    name: 'User',
     component: HomeView,
     children: [
       {
-        path: '',
-        name: 'UserListPage',
+        path: 'list',
+        name: 'UserList',
         component: () => import('@/views/user/UserList.vue')
+      },
+      {
+        path: 'profile',
+        name: 'UserProfile',
+        component: () => import('@/views/user/Profile.vue')
       }
     ]
   }
