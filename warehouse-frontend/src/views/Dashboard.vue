@@ -54,7 +54,7 @@
             </div>
             <div class="card-info">
               <div class="card-title">企业信息</div>
-              <div class="card-value">{{ stats.enterpriseCount }}</div>
+              <div class="card-value">{{ stats.enterpriseName || stats.enterpriseCount }}</div>
             </div>
           </div>
         </el-card>
@@ -77,6 +77,37 @@
             <span>仓库库存分布</span>
           </div>
           <div id="warehouseChart" style="height: 300px;"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 排行榜区域 -->
+    <el-row :gutter="20" class="dashboard-ranking">
+      <el-col :span="24">
+        <el-card class="ranking-card" shadow="never">
+          <div slot="header" class="chart-header">
+            <span>进出货物数量前十排行</span>
+            <div class="date-filter">
+              <el-date-picker
+                v-model="rankDateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                format="yyyy-MM-dd"
+                value-format="yyyy-MM-dd"
+                @change="onRankDateChange">
+              </el-date-picker>
+            </div>
+          </div>
+          <el-table :data="topTenData" style="width: 100%" :max-height="400">
+            <el-table-column type="index" label="排名" width="80"></el-table-column>
+            <el-table-column prop="enterpriseName" label="企业" width="200"></el-table-column>
+            <el-table-column prop="goodsName" label="商品" width="200"></el-table-column>
+            <el-table-column prop="inQuantity" label="入库数量" width="120"></el-table-column>
+            <el-table-column prop="outQuantity" label="出库数量" width="120"></el-table-column>
+            <el-table-column prop="totalQuantity" label="总数量" width="120"></el-table-column>
+          </el-table>
         </el-card>
       </el-col>
     </el-row>
@@ -116,7 +147,7 @@
 
 <script>
 import * as echarts from 'echarts'
-import { getStatistics, getTrendData, getWarehouseDistribution } from '@/api/statistics'
+import { getStatistics, getTrendData, getWarehouseDistribution, getTopTenInOutData } from '@/api/statistics'
 import { getInOutRecordList } from '@/api/inOutRecord'
 
 export default {
@@ -128,9 +159,12 @@ export default {
         goodsCount: 0,
         warehouseCount: 0,
         inOutRecordCount: 0,
-        enterpriseCount: 0
+        enterpriseCount: 0,
+        enterpriseName: '' // 添加企业名称字段
       },
       recentRecords: [],
+      topTenData: [],
+      rankDateRange: [],
       chartData: {
         trendData: {
           dates: [],
@@ -148,6 +182,7 @@ export default {
     this.loadStats()
     this.loadRecentRecords()
     this.loadChartData()
+    this.loadTopTenData()
     // 移除这里的 renderCharts 调用，改由 loadChartData 完成后触发
   },
   methods: {
@@ -182,7 +217,8 @@ export default {
             goodsCount: statsData.goodsCount || 0,
             warehouseCount: statsData.warehouseCount || 0,
             inOutRecordCount: statsData.inOutRecordCount || 0,
-            enterpriseCount: statsData.enterpriseCount || 0
+            enterpriseCount: statsData.enterpriseCount || 0,
+            enterpriseName: statsData.enterpriseName || '' // 添加企业名称
           }
           console.log('Updated stats in component:', this.stats)
         } else {
@@ -265,6 +301,37 @@ export default {
         this.$message.error('获取图表数据失败')
       }
     },
+    
+    async loadTopTenData() {
+      try {
+        console.log('Loading top ten data...')
+        const params = {}
+        if (this.rankDateRange && this.rankDateRange.length === 2) {
+          params.startDate = this.rankDateRange[0]
+          params.endDate = this.rankDateRange[1]
+        }
+        
+        const res = await getTopTenInOutData(params)
+        console.log('Top ten data response:', res)
+        
+        if (res && (res.code === 200 || res.code === 0 || res.topTenData)) {
+          // 尝试从不同位置获取数据
+          this.topTenData = res.data?.topTenData || res.topTenData || []
+          console.log('Updated top ten data:', this.topTenData)
+        } else {
+          console.error('获取前十排行数据失败:', res?.msg || res?.message || '响应格式不正确')
+          this.$message.error(res?.msg || res?.message || '获取前十排行数据失败')
+        }
+      } catch (error) {
+        console.error('获取前十排行数据失败 (catch):', error)
+        this.$message.error('获取前十排行数据失败')
+      }
+    },
+    
+    onRankDateChange() {
+      this.loadTopTenData()
+    },
+    
     renderCharts() {
       console.log('Rendering charts with data:', this.chartData)
       
@@ -493,6 +560,24 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-weight: 500;
+}
+
+.dashboard-ranking {
+  margin-bottom: 20px;
+}
+
+.ranking-card {
+  border-radius: 8px;
+  border: none;
+}
+
+.date-filter {
+  display: flex;
+  align-items: center;
+}
+
+.date-filter .el-date-editor {
+  width: auto;
 }
 
 .dashboard-recent {

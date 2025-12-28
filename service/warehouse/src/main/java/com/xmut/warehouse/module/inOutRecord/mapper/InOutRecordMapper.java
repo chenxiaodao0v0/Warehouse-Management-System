@@ -14,6 +14,6 @@ public interface InOutRecordMapper extends BaseMapper<InOutRecord> {
     /**
      * 获取最大的出入库记录ID，用于ID序列生成
      */
-    @Select("SELECT MAX(id) FROM xmut_inout_record WHERE id LIKE 'R%'")
+    @Select("SELECT MAX(id) FROM xmut_in_out_record WHERE id LIKE 'R%'")
     String getMaxRecordId();
 }

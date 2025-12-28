@@ -89,4 +89,24 @@ public class StatisticsController {
             return R.fail("获取仓库库存分布失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 根据时间段统计进出货物数量前十排行
+     */
+    @GetMapping("/top-ten")
+    public R getTopTenInOutData(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            logger.info("开始获取进出货物数量前十排行，时间段: {} - {}", startDate, endDate);
+            Map<String, Object> topTenData = statisticsService.getTopTenInOutData(startDate, endDate);
+            logger.info("进出货物数量前十排行查询完成，记录数量: {}", 
+                topTenData.get("topTenData") != null ? 
+                ((java.util.List) topTenData.get("topTenData")).size() : 0);
+            return R.success(topTenData);
+        } catch (Exception e) {
+            logger.error("获取进出货物数量前十排行失败", e);
+            return R.fail("获取进出货物数量前十排行失败: " + e.getMessage());
+        }
+    }
 }

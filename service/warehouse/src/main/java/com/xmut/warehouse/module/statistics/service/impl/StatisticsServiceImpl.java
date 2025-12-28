@@ -85,11 +85,19 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
         
         try {
-            long enterpriseCount = enterpriseService.count();
-            logger.info("企业数量: {}", enterpriseCount);
-            statistics.put("enterpriseCount", enterpriseCount);
+            // 单企业系统，查询企业信息并返回企业名称
+            XmutEnterprise enterprise = enterpriseService.getOne(new QueryWrapper<>(), false);
+            if (enterprise != null) {
+                statistics.put("enterpriseName", enterprise.getName());
+                statistics.put("enterpriseCount", 1); // 单企业系统，存在企业则计数为1
+            } else {
+                statistics.put("enterpriseName", "暂无企业信息");
+                statistics.put("enterpriseCount", 0);
+            }
+            logger.info("企业信息: {}", enterprise != null ? enterprise.getName() : "暂无企业信息");
         } catch (Exception e) {
-            logger.error("查询企业数量失败", e);
+            logger.error("查询企业信息失败", e);
+            statistics.put("enterpriseName", "暂无企业信息");
             statistics.put("enterpriseCount", 0);
         }
         
@@ -210,5 +218,140 @@ public class StatisticsServiceImpl implements StatisticsService {
         distributionData.put("warehouseData", warehouseData);
         logger.info("仓库分布数据: {}", distributionData);
         return distributionData;
+    }
+    
+    @Override
+    public Map<String, Object> getTopTenInOutData(String startDate, String endDate) {
+        Map<String, Object> result = new HashMap<>();
+        List<Map<String, Object>> topTenData = new ArrayList<>();
+        
+        try {
+            logger.info("开始查询进出货物数量前十排行，时间段: {} - {}", startDate, endDate);
+            
+            // 构建查询条件
+            QueryWrapper<InOutRecord> queryWrapper = new QueryWrapper<>();
+            
+            // 如果提供了开始和结束日期，则添加时间范围条件
+            if (startDate != null && !startDate.isEmpty()) {
+                queryWrapper.ge("operate_time", startDate + " 00:00:00");
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                queryWrapper.le("operate_time", endDate + " 23:59:59");
+            }
+            
+            // 查询所有记录
+            List<InOutRecord> records = inOutRecordService.list(queryWrapper);
+            
+            // 使用正确的数据类型来存储商品ID，并创建一个Map来存储每种商品的统计信息
+            Map<String, Map<String, Object>> goodsStatsMap = new HashMap<>();
+            
+            for (InOutRecord record : records) {
+                String goodsId = record.getGoodsId();
+                if (goodsId == null) {
+                    continue; // 跳过商品ID为空的记录
+                }
+                
+                if (!goodsStatsMap.containsKey(goodsId)) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("goodsId", goodsId);
+                    item.put("totalQuantity", 0);
+                    item.put("inQuantity", 0);
+                    item.put("outQuantity", 0);
+                    item.put("goodsName", "");
+                    item.put("enterpriseName", "暂无企业信息");
+                    goodsStatsMap.put(goodsId, item);
+                }
+                
+                Map<String, Object> item = goodsStatsMap.get(goodsId);
+                
+                // 累加总数量
+                int quantity = record.getQuantity() != null ? record.getQuantity() : 0;
+                
+                // 安全地获取并转换数量值
+                Integer currentTotalQuantity = getSafeIntegerValue(item.get("totalQuantity"));
+                currentTotalQuantity += quantity;
+                item.put("totalQuantity", currentTotalQuantity);
+                
+                // 根据类型分别累加入库/出库数量
+                if (record.getType() != null) {
+                    if (record.getType() == 1) { // 入库
+                        Integer currentInQuantity = getSafeIntegerValue(item.get("inQuantity"));
+                        currentInQuantity += quantity;
+                        item.put("inQuantity", currentInQuantity);
+                    } else if (record.getType() == 2) { // 出库
+                        Integer currentOutQuantity = getSafeIntegerValue(item.get("outQuantity"));
+                        currentOutQuantity += quantity;
+                        item.put("outQuantity", currentOutQuantity);
+                    }
+                }
+            }
+            
+            // 查询商品信息并填充到汇总数据中
+            for (Map.Entry<String, Map<String, Object>> entry : goodsStatsMap.entrySet()) {
+                String goodsId = entry.getKey();
+                Map<String, Object> item = entry.getValue();
+                
+                // 查询商品信息
+                XmutGoods goods = goodsService.getById(goodsId);
+                if (goods != null) {
+                    item.put("goodsName", goods.getName());
+                    
+                    // 由于XmutGoods实体中没有enterpriseId字段，我们无法直接获取企业信息
+                    // 但在单企业系统中，我们可以获取企业信息并设置
+                    try {
+                        XmutEnterprise enterprise = enterpriseService.getOne(new QueryWrapper<>(), false);
+                        if (enterprise != null) {
+                            item.put("enterpriseName", enterprise.getName());
+                        } else {
+                            item.put("enterpriseName", "暂无企业信息");
+                        }
+                    } catch (Exception e) {
+                        logger.error("获取企业信息失败", e);
+                        item.put("enterpriseName", "暂无企业信息");
+                    }
+                }
+            }
+            
+            // 转换为列表并按总数量排序
+            List<Map<String, Object>> allData = new ArrayList<>(goodsStatsMap.values());
+            allData.sort((o1, o2) -> {
+                Integer qty1 = getSafeIntegerValue(o1.get("totalQuantity"));
+                Integer qty2 = getSafeIntegerValue(o2.get("totalQuantity"));
+                return qty2.compareTo(qty1);
+            });
+            
+            // 取前十
+            topTenData = allData.stream()
+                               .limit(10)
+                               .collect(java.util.stream.Collectors.toList());
+            
+            logger.info("查询到进出货物数量前十排行数据数量: {}", topTenData.size());
+        } catch (Exception e) {
+            logger.error("查询进出货物数量前十排行失败", e);
+        }
+        
+        result.put("topTenData", topTenData);
+        return result;
+    }
+    
+    /**
+     * 安全地从Object转换为Integer
+     * @param obj 待转换的对象
+     * @return Integer值，如果转换失败则返回0
+     */
+    private Integer getSafeIntegerValue(Object obj) {
+        if (obj instanceof Integer) {
+            return (Integer) obj;
+        } else if (obj instanceof String) {
+            try {
+                return Integer.parseInt((String) obj);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        } else if (obj instanceof Number) {
+            return ((Number) obj).intValue();
+        } else {
+            return 0;
+        }
     }
 }
