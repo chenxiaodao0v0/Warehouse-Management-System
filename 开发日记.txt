@@ -92,3 +92,6 @@
 
 在后端使用@PreAuthorize("hasRole('SUPER_ADMIN')")注解
 在前端侧边栏使用v-if="hasSuperAdminRole"控制菜单显示
+
+增加一个功能：防止超级管理员删除自己的账号
+

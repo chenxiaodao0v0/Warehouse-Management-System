@@ -48,7 +48,7 @@ export function deleteUser(id) {
 // 重置密码
 export function resetPassword(id) {
   return request({
-    url: `/api/user/reset-password/${id}`,
+    url: `/api/user/resetPassword/${id}`,
     method: 'put'
   })
 }
@@ -56,7 +56,7 @@ export function resetPassword(id) {
 // 修改密码
 export function changePassword(id, data) {
   return request({
-    url: `/api/user/change-password/${id}`,
+    url: `/api/user/changePassword/${id}`,
     method: 'put',
     data
   })
@@ -65,7 +65,7 @@ export function changePassword(id, data) {
 // 切换用户状态
 export function toggleUserStatus(id, status) {
   return request({
-    url: `/api/user/toggle-status/${id}?status=${status}`,
+    url: `/api/user/toggleStatus/${id}?status=${status}`,
     method: 'put'
   })
 }

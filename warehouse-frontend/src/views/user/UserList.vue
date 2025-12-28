@@ -57,40 +57,45 @@
         <el-table-column prop="phone" label="手机号" width="150"></el-table-column>
         <el-table-column prop="email" label="邮箱" width="200"></el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
-        <el-table-column label="操作" fixed="right" width="280">
+        <el-table-column label="操作" fixed="right" width="180">
           <template slot-scope="scope">
-            <el-button 
-              type="primary" 
-              size="mini" 
-              @click="handleEdit(scope.row)"
-              :disabled="!hasSuperAdminRole"
-            >
-              编辑
-            </el-button>
-            <el-button 
-              type="warning" 
-              size="mini" 
-              @click="handleResetPassword(scope.row)"
-              :disabled="!hasSuperAdminRole"
-            >
-              重置密码
-            </el-button>
-            <el-button 
-              :type="scope.row.status === 1 ? 'danger' : 'success'" 
-              size="mini" 
-              @click="handleToggleStatus(scope.row)"
-              :disabled="!hasSuperAdminRole"
-            >
-              {{ scope.row.status === 1 ? '禁用' : '启用' }}
-            </el-button>
-            <el-button 
-              type="danger" 
-              size="mini" 
-              @click="handleDelete(scope.row)"
-              :disabled="!hasSuperAdminRole"
-            >
-              删除
-            </el-button>
+            <el-dropdown @command="handleCommand" size="mini" :disabled="!hasSuperAdminRole">
+              <el-button size="mini" type="primary">
+                操作 <i class="el-icon-arrow-down el-icon--right"></i>
+              </el-button>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item 
+                  :command="{action: 'edit', row: scope.row}" 
+                  :disabled="!hasSuperAdminRole"
+                  icon="el-icon-edit"
+                >
+                  编辑
+                </el-dropdown-item>
+                <el-dropdown-item 
+                  :command="{action: 'resetPassword', row: scope.row}" 
+                  :disabled="!hasSuperAdminRole"
+                  icon="el-icon-key"
+                >
+                  重置密码
+                </el-dropdown-item>
+                <el-dropdown-item 
+                  :command="{action: 'toggleStatus', row: scope.row}" 
+                  :disabled="!hasSuperAdminRole"
+                  :icon="scope.row.status === 1 ? 'el-icon-video-pause' : 'el-icon-video-play'"
+                >
+                  {{ scope.row.status === 1 ? '禁用' : '启用' }}
+                </el-dropdown-item>
+                <el-dropdown-item 
+                  :command="{action: 'delete', row: scope.row}" 
+                  :disabled="!hasSuperAdminRole"
+                  divided
+                  icon="el-icon-delete"
+                  class="danger-item"
+                >
+                  删除
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -377,6 +382,27 @@ export default {
           this.$message.error(`${this.dialogType === 'add' ? '添加' : '更新'}用户失败`)
         }
       })
+    },
+
+    // 处理下拉菜单命令
+    handleCommand(command) {
+      const { action, row } = command;
+      switch(action) {
+        case 'edit':
+          this.handleEdit(row);
+          break;
+        case 'resetPassword':
+          this.handleResetPassword(row);
+          break;
+        case 'toggleStatus':
+          this.handleToggleStatus(row);
+          break;
+        case 'delete':
+          this.handleDelete(row);
+          break;
+        default:
+          console.warn('未知的操作:', action);
+      }
     }
   }
 }
@@ -419,4 +445,11 @@ export default {
 .dialog-footer {
   text-align: right;
 }
-</style>
+
+.danger-item {
+  color: #f56c6c;
+}
+.danger-item:hover {
+  color: white;
+  background-color: #f56c6c;
+}
