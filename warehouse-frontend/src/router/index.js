@@ -38,35 +38,68 @@ const routes = [
         path: '',
         name: 'GoodsListPage',
         component: () => import('@/views/goods/GoodsList.vue')
-      },
+      }
+    ]
+  },
+  {
+    path: '/warehouse',
+    name: 'Warehouse',
+    component: HomeView,
+    children: [
       {
-        path: '/warehouse/add',
+        path: 'add',
         name: 'AddWarehouse',
         component: () => import('@/views/warehouse/AddWarehouse.vue')
       },
       {
-        path: '/warehouse/inventory',
+        path: 'inventory',
         name: 'InventoryOverview',
         component: () => import('@/views/warehouse/InventoryOverview.vue')
       },
       {
-        path: '/warehouse/detail/:id',
-        name: 'WarehouseInventoryDetail',
+        path: 'detail/:id',
+        name: 'WarehouseDetail',
         component: () => import('@/views/warehouse/WarehouseInventoryDetail.vue'),
         props: true
-      },
+      }
+    ]
+  },
+  {
+    path: '/enterprise',
+    name: 'Enterprise',
+    component: HomeView,
+    children: [
       {
-        path: '/enterprise/info',
+        path: 'info',
         name: 'EnterpriseInfo',
         component: () => import('@/views/enterprise/EnterpriseInfo.vue')
-      },
+      }
+    ]
+  },
+  {
+    path: '/inoutrecord',
+    name: 'InOutRecord',
+    component: HomeView,
+    children: [
       {
-        path: '/inoutrecord',
-        name: 'InOutRecord',
+        path: '',
+        name: 'InOutRecordPage',
         component: () => import('@/views/inOutRecord/InOutRecord.vue')
       }
     ]
   },
+  {
+    path: '/user/list',
+    name: 'UserList',
+    component: HomeView,
+    children: [
+      {
+        path: '',
+        name: 'UserListPage',
+        component: () => import('@/views/user/UserList.vue')
+      }
+    ]
+  }
 
 ]
 
