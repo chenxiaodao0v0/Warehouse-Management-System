@@ -269,19 +269,26 @@ export default {
     // 删除用户
     async handleDelete(row) {
       try {
-        await this.$confirm(`确定要删除用户 "${row.username}" 吗？`, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
+        await this.$confirm(
+          `确定要删除用户 "${row.username}" 吗？此操作不可撤销！`, 
+          '警告', 
+          {
+            confirmButtonText: '确定删除',
+            cancelButtonText: '取消',
+            type: 'warning',
+            confirmButtonClass: 'el-button--danger' // 添加危险按钮样式
+          }
+        )
         
         await deleteUser(row.id)
-        this.$message.success('删除成功')
+        this.$message.success('用户删除成功')
         this.fetchUserList() // 重新获取列表
       } catch (error) {
         if (error !== 'cancel') {
           console.error('删除用户失败：', error)
-          this.$message.error('删除失败')
+          this.$message.error('删除失败：' + (error.message || error))
+        } else {
+          this.$message.info('已取消删除')
         }
       }
     },
@@ -305,26 +312,31 @@ export default {
       }
     },
 
-    // 启用/禁用用户
+    // 切换用户状态
     async handleToggleStatus(row) {
+      const newStatus = row.status === 1 ? 0 : 1;
+      const statusText = newStatus === 1 ? '启用' : '禁用';
+      
       try {
-        const statusText = row.status === 1 ? '禁用' : '启用'
-        const confirmText = `确定要${statusText}用户 "${row.username}" 吗？`
+        await this.$confirm(
+          `确定要${statusText}用户 "${row.username}" 吗？`, 
+          '提示', 
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: newStatus === 1 ? 'success' : 'warning'
+          }
+        )
         
-        await this.$confirm(confirmText, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        
-        const newStatus = row.status === 1 ? 0 : 1
-        await toggleUserStatus(row.id, newStatus)
-        this.$message.success(`${statusText}成功`)
-        this.fetchUserList() // 重新获取列表
+        await toggleUserStatus(row.id, newStatus);
+        this.$message.success(`用户${statusText}成功`);
+        this.fetchUserList(); // 重新获取列表
       } catch (error) {
         if (error !== 'cancel') {
-          console.error(`${row.status === 1 ? '禁用' : '启用'}用户失败：`, error)
-          this.$message.error(`${row.status === 1 ? '禁用' : '启用'}失败`)
+          console.error(`用户${statusText}失败：`, error);
+          this.$message.error(`${statusText}失败：` + (error.message || error));
+        } else {
+          this.$message.info('已取消操作');
         }
       }
     },

@@ -12,9 +12,12 @@ import com.xmut.warehouse.module.user.entity.XmutUser;
 import com.xmut.warehouse.module.user.mapper.XmutUserMapper;
 import com.xmut.warehouse.module.user.service.XmutUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -138,9 +141,27 @@ public class XmutUserServiceImpl extends ServiceImpl<XmutUserMapper, XmutUser> i
 
     @Override
     public R<?> deleteUser(String id) {
-        // 检查是否为当前登录用户，避免删除自己
-        // 这里需要获取当前登录用户ID，可以通过JWT token获取
-        // 简化处理：先直接删除
+        // 获取当前登录用户ID，防止删除自己
+        String currentUserId = getCurrentUserId();
+        if (id.equals(currentUserId)) {
+            return R.fail("不能删除自己的账户");
+        }
+        
+        // 检查用户是否存在
+        XmutUser user = this.getById(id);
+        if (user == null) {
+            return R.fail("用户不存在");
+        }
+        
+        // 检查是否为最后一个超级管理员
+        if (user.getRole() != null && user.getRole() == 1) { // 如果是超级管理员
+            LambdaQueryWrapper<XmutUser> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(XmutUser::getRole, 1).eq(XmutUser::getStatus, 1); // 查询启用的超级管理员
+            List<XmutUser> superAdmins = this.list(queryWrapper);
+            if (superAdmins.size() <= 1) { // 如果只有一个启用的超级管理员
+                return R.fail("不能删除最后一个超级管理员");
+            }
+        }
         
         boolean result = this.removeById(id);
         if (result) {
@@ -191,13 +212,33 @@ public class XmutUserServiceImpl extends ServiceImpl<XmutUserMapper, XmutUser> i
 
     @Override
     public R<?> toggleUserStatus(String id, Integer status) {
+        // 获取当前登录用户ID，防止禁用自己
+        String currentUserId = getCurrentUserId();
+        if (id.equals(currentUserId)) {
+            return R.fail("不能修改自己的账户状态");
+        }
+        
+        // 检查用户是否存在
         XmutUser user = this.getById(id);
         if (user == null) {
             return R.fail("用户不存在");
         }
         
-        user.setStatus(status);
-        boolean result = this.updateById(user);
+        // 检查是否为最后一个启用的超级管理员（仅在要禁用时检查）
+        if (status == 0 && user.getRole() != null && user.getRole() == 1 && user.getStatus() == 1) { // 如果是要禁用一个启用的超级管理员
+            LambdaQueryWrapper<XmutUser> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(XmutUser::getRole, 1).eq(XmutUser::getStatus, 1); // 查询启用的超级管理员
+            List<XmutUser> superAdmins = this.list(queryWrapper);
+            if (superAdmins.size() <= 1) { // 如果只有一个启用的超级管理员
+                return R.fail("不能禁用最后一个启用的超级管理员");
+            }
+        }
+        
+        XmutUser updateUser = new XmutUser();
+        updateUser.setId(id);
+        updateUser.setStatus(status);
+        
+        boolean result = this.updateById(updateUser);
         if (result) {
             String statusText = status == 1 ? "启用" : "禁用";
             return R.success("用户" + statusText + "成功");
@@ -228,5 +269,18 @@ public class XmutUserServiceImpl extends ServiceImpl<XmutUserMapper, XmutUser> i
         } else {
             System.out.println("超级管理员账号已存在");
         }
+    }
+    
+    /**
+     * 获取当前登录用户ID
+     * @return 当前用户ID
+     */
+    private String getCurrentUserId() {
+        // 从Spring Security上下文中获取当前认证的用户ID
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof String) {
+            return (String) authentication.getPrincipal();
+        }
+        return null;
     }
 }
