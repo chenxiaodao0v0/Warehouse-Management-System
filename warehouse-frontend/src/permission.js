@@ -5,7 +5,6 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { login, getUserInfo } from '@/api/user'
 import { getUserMenuPermissions } from '@/api/permission'
-import { imul } from 'core-js/core/number'
 
 NProgress.configure({ showSpinner: false })
 

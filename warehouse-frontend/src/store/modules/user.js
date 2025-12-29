@@ -51,7 +51,17 @@ const actions = {
           resolve(data)
         })
         .catch(error => {
-          reject(error)
+          if (error.response && error.response.status === 401) {
+            // 清除用户信息和token
+            commit('SET_TOKEN', '')
+            commit('SET_USER_INFO', null)
+            commit('SET_PERMISSIONS', [])
+            removeToken()
+            // 可以添加提示信息
+            reject('登录已过期，请重新登录')
+          } else {
+            reject(error)
+          }
         })
     })
   },

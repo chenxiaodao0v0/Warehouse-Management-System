@@ -47,7 +47,7 @@ request.interceptors.response.use(
       
       Vue.prototype.$message.error('登录已过期，请重新登录')
       // 清除 Vuex 和本地缓存的 Token
-      store.commit('user/clearToken')
+      store.dispatch('user/resetToken')
       // 跳转登录页（Vue2 路由跳转），但要避免重复跳转到当前页面
       if (router.currentRoute.path !== '/login') {
         router.push('/login')

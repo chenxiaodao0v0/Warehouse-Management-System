@@ -74,16 +74,15 @@ const routes = [
           menuCode: 'goods_list'
         }
       },
-      // 商品分类功能尚未实现，暂时注释掉
-      // {
-      //   path: 'goods/category',
-      //   name: 'GoodsCategory',
-      //   component: () => import('../views/goods/GoodsCategory.vue'),
-      //   meta: { 
-      //     title: '商品分类',
-      //     menuCode: 'goods_category'
-      //   }
-      // },
+      {
+        path: 'goods/category',
+        name: 'GoodsCategory',
+        component: () => import('../views/goods/GoodsCategory.vue'),
+        meta: { 
+          title: '商品分类',
+          menuCode: 'goods_category'
+        }
+      },
       {
         path: 'inOut/record',
         name: 'InOutRecord',
